@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch-Lernspiel: Kassen-Hotspots (10er)</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --success-color: #2ecc71;
+            --error-color: #e74c3c;
+            --solution-color: #f39c12;
+            --bg-color: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--primary-color);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .speech-bubble {
+            background: #e1f5fe;
+            border: 2px solid var(--accent-color);
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Grafik-Container */
+        .image-container {
+            position: relative;
+            width: 100%;
+            background: #f9f9f9;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        svg {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .hotspot {
+            cursor: pointer;
+            fill: transparent;
+            stroke: none;
+            transition: all 0.3s;
+        }
+
+        /* Effekte */
+        .correct-flash { fill: rgba(46, 204, 113, 0.4) !important; stroke: var(--success-color) !important; stroke-width: 3; }
+        .wrong-flash { fill: rgba(231, 76, 60, 0.4) !important; stroke: var(--error-color) !important; stroke-width: 3; }
+        .solution-flash { fill: rgba(243, 156, 18, 0.4) !important; stroke: var(--solution-color) !important; stroke-width: 4; }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            min-width: 120px;
+        }
+
+        .btn-next { background: var(--accent-color); color: white; }
+        .btn-solution { background: var(--solution-color); color: white; }
+        .btn-reset { background: #95a5a6; color: white; }
+        button:disabled { opacity: 0.5; cursor: default; }
+
+        #feedback-text { margin-top: 15px; font-weight: bold; min-height: 1.5rem; }
+        #counter { font-size: 0.85rem; color: #7f8c8d; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="speech-bubble" id="phrase-bubble">Lädt...</div>
+
+    <div class="image-container">
+        <svg viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
+            <!-- Tischoberfläche -->
+            <rect x="0" y="300" width="800" height="150" fill="#bdc3c7" />
+            <rect x="0" y="300" width="800" height="10" fill="#95a5a6" />
+
+            <!-- 1. Kassenband (Лента) -->
+            <rect x="0" y="320" width="300" height="80" fill="#34495e" />
+            <rect id="belt" class="hotspot" x="0" y="310" width="300" height="100" />
+
+            <!-- 2. Scanner (Сканер) -->
+            <rect x="320" y="320" width="80" height="20" fill="#2c3e50" />
+            <rect x="330" y="322" width="60" height="10" fill="#e74c3c" opacity="0.5" />
+            <rect id="scanner" class="hotspot" x="310" y="310" width="100" height="40" />
+
+            <!-- 3. Terminal (Терминал) -->
+            <rect x="420" y="220" width="70" height="100" rx="5" fill="#2c3e50" />
+            <rect x="425" y="230" width="60" height="40" fill="#34495e" />
+            <rect id="terminal" class="hotspot" x="415" y="215" width="80" height="110" />
+
+            <!-- 4. Kassenbon-Drucker (Чек) -->
+            <rect x="520" y="260" width="60" height="50" fill="#7f8c8d" />
+            <rect x="530" y="220" width="40" height="40" fill="white" stroke="#ddd" />
+            <rect id="receipt" class="hotspot" x="515" y="215" width="70" height="100" />
+
+            <!-- 5. Kundenkarte auf dem Tisch (Карта) -->
+            <rect x="350" y="380" width="60" height="35" rx="3" fill="#3498db" />
+            <circle cx="365" cy="397" r="5" fill="white" opacity="0.3" />
+            <rect id="card" class="hotspot" x="340" y="370" width="80" height="50" />
+
+            <!-- 6. Plastiktüten (Пакет) -->
+            <path d="M620 250 Q650 220 680 250 L680 350 L620 350 Z" fill="#ecf0f1" stroke="#bdc3c7" />
+            <rect id="bags" class="hotspot" x="610" y="220" width="80" height="140" />
+
+            <!-- 7. Aufkleber-Box (Наклейки) -->
+            <rect x="710" y="330" width="60" height="40" fill="#f1c40f" />
+            <circle cx="725" cy="345" r="5" fill="white" />
+            <circle cx="750" cy="355" r="5" fill="white" />
+            <rect id="stickers" class="hotspot" x="705" y="325" width="70" height="50" />
+
+            <!-- 8. Bargeld/Münzen (Наличные) -->
+            <circle cx="480" cy="400" r="12" fill="#f39c12" stroke="#d35400" />
+            <circle cx="505" cy="405" r="12" fill="#f39c12" stroke="#d35400" />
+            <rect x="520" y="390" width="50" height="30" fill="#27ae60" />
+            <rect id="cash" class="hotspot" x="460" y="380" width="120" height="50" />
+
+            <!-- 9. Bildschirm mit Rabatt (Скидка) -->
+            <rect x="310" y="100" width="120" height="80" fill="#2c3e50" stroke="#000" stroke-width="4" />
+            <text x="335" y="150" fill="#2ecc71" font-family="Arial" font-size="30" font-weight="bold">%</text>
+            <rect id="discount" class="hotspot" x="305" y="95" width="130" height="90" />
+
+            <!-- 10. Bereich für Punkte (Бонусы) -->
+            <rect x="450" y="100" width="100" height="80" fill="#2c3e50" stroke="#000" stroke-width="4" />
+            <text x="490" y="150" fill="#f1c40f" font-family="Arial" font-size="40" text-anchor="middle">★</text>
+            <rect id="bonuses" class="hotspot" x="445" y="95" width="110" height="90" />
+        </svg>
+    </div>
+
+    <div id="feedback-text"></div>
+    <div id="counter">Frage 1 von 10</div>
+
+    <div class="controls">
+        <button id="btn-next" class="btn-next" onclick="nextTask()" style="display:none;">Nächste Frage</button>
+        <button id="btn-solution" class="btn-solution" onclick="showSolution()">Lösung anzeigen</button>
+        <button id="btn-reset" class="btn-reset" onclick="restartGame()">Neustart</button>
+    </div>
+</div>
+
+<script>
+    const tasks = [
+        { phrase: "Вставляйте карту.", target: "terminal", msg: "Richtig! Das Terminal zum Einstecken der Karte." },
+        { phrase: "Ваш чек.", target: "receipt", msg: "Genau! Dort kommt der Kassenbon heraus." },
+        { phrase: "Пакет нужен?", target: "bags", msg: "Korrekt! Hier hängen die Plastiktüten." },
+        { phrase: "Наклейки собираете?", target: "stickers", msg: "Richtig! Die Sammel-Aufkleber sind in der gelben Box." },
+        { phrase: "Карта магазина есть?", target: "card", msg: "Richtig! Die Kundenkarte liegt auf dem Tresen." },
+        { phrase: "Бонусы списываем?", target: "bonuses", msg: "Genau! Der Kontostand der Bonuspunkte am Bildschirm." },
+        { phrase: "Со скидкой...", target: "discount", msg: "Richtig! Das Prozentzeichen zeigt den Rabatt an." },
+        { phrase: "Платить наличными.", target: "cash", msg: "Korrekt! Scheine und Münzen sind Bargeld." },
+        { phrase: "Положите продукты на ленту.", target: "belt", msg: "Richtig! Das ist das Kassenband." },
+        { phrase: "Сканировать товар.", target: "scanner", msg: "Genau! Mit dem Laser wird der Preis gescannt." }
+    ];
+
+    let currentIdx = 0;
+    let canClick = true;
+
+    const phraseBubble = document.getElementById('phrase-bubble');
+    const feedbackText = document.getElementById('feedback-text');
+    const btnNext = document.getElementById('btn-next');
+    const counterText = document.getElementById('counter');
+    const hotspots = document.querySelectorAll('.hotspot');
+
+    function initTask() {
+        if(currentIdx >= tasks.length) {
+            phraseBubble.innerText = "Hervorragend!";
+            feedbackText.innerText = "Du hast alle 10 Objekte gefunden.";
+            counterText.innerText = "Übung beendet.";
+            btnNext.style.display = "none";
+            document.getElementById('btn-solution').disabled = true;
+            return;
+        }
+        canClick = true;
+        const task = tasks[currentIdx];
+        phraseBubble.innerText = `„${task.phrase}“`;
+        feedbackText.innerText = "";
+        feedbackText.style.color = "inherit";
+        btnNext.style.display = "none";
+        counterText.innerText = `Frage ${currentIdx + 1} von ${tasks.length}`;
+        
+        hotspots.forEach(h => h.classList.remove('correct-flash', 'wrong-flash', 'solution-flash'));
+    }
+
+    hotspots.forEach(h => {
+        h.addEventListener('click', function() {
+            if(!canClick) return;
+            const target = tasks[currentIdx].target;
+            if(this.id === target) {
+                canClick = false;
+                this.classList.add('correct-flash');
+                feedbackText.innerText = tasks[currentIdx].msg;
+                feedbackText.style.color = "var(--success-color)";
+                btnNext.style.display = "inline-block";
+            } else {
+                this.classList.add('wrong-flash');
+                setTimeout(() => this.classList.remove('wrong-flash'), 500);
+                feedbackText.innerText = "Versuch es nochmal!";
+                feedbackText.style.color = "var(--error-color)";
+            }
+        });
+    });
+
+    function nextTask() {
+        currentIdx++;
+        initTask();
+    }
+
+    function showSolution() {
+        if(!canClick) return;
+        const targetId = tasks[currentIdx].target;
+        const targetEl = document.getElementById(targetId);
+        targetEl.classList.add('solution-flash');
+        setTimeout(() => targetEl.classList.remove('solution-flash'), 2000);
+        feedbackText.innerText = "Hier befindet sich das Objekt.";
+        feedbackText.style.color = "var(--solution-color)";
+    }
+
+    function restartGame() {
+        currentIdx = 0;
+        document.getElementById('btn-solution').disabled = false;
+        initTask();
+    }
+
+    // Start
+    initTask();
+</script>
+
+</body>
+</html>
