@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch-Grammatik: Die richtige Endung</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --error-color: #e74c3c;
+            --bg-color: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            color: var(--primary-color);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .progress-container {
+            margin-bottom: 30px;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: #eee;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        #progress-fill {
+            height: 100%;
+            background: var(--accent-color);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            text-align: center;
+            margin-top: 0;
+        }
+
+        .instruction {
+            text-align: center;
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 25px;
+        }
+
+        .question-box {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            text-align: center;
+            border-left: 5px solid var(--accent-color);
+        }
+
+        .sentence {
+            font-size: 1.4rem;
+            margin-bottom: 10px;
+        }
+
+        .placeholder {
+            color: var(--accent-color);
+            font-weight: bold;
+            border-bottom: 2px dashed var(--accent-color);
+            padding: 0 10px;
+        }
+
+        .translation {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            font-style: normal;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .option-btn {
+            padding: 15px;
+            font-size: 1.1rem;
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            outline: none;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            border-color: var(--accent-color);
+            background-color: #f0f7ff;
+        }
+
+        .option-btn.correct {
+            background-color: var(--success-color);
+            border-color: var(--success-color);
+            color: white;
+        }
+
+        .option-btn.wrong {
+            background-color: var(--error-color);
+            border-color: var(--error-color);
+            color: white;
+        }
+
+        .option-btn:disabled {
+            cursor: default;
+        }
+
+        #feedback {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+        }
+
+        .feedback-box {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #c8e6c9;
+        }
+
+        .feedback-explanation {
+            font-weight: normal;
+            font-size: 0.9rem;
+            display: block;
+            margin-top: 5px;
+        }
+
+        #next-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin-top: 20px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: none;
+        }
+
+        #result-screen {
+            display: none;
+            text-align: center;
+        }
+
+        .score-val {
+            font-size: 3rem;
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+
+        @media (max-width: 480px) {
+            .sentence { font-size: 1.2rem; }
+            .option-btn { padding: 12px; font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="quiz-area">
+        <div class="progress-container">
+            <div class="progress-bar"><div id="progress-fill"></div></div>
+        </div>
+        
+        <h1>Grammatik: Die richtige Form</h1>
+        <div class="instruction">Wähle die grammatikalisch korrekte Form aus.</div>
+
+        <div class="question-box">
+            <div id="sentence-display" class="sentence"></div>
+            <div id="translation-display" class="translation"></div>
+        </div>
+
+        <div id="options" class="options-grid"></div>
+
+        <div id="feedback"></div>
+        <button id="next-btn">Nächste Frage</button>
+    </div>
+
+    <div id="result-screen">
+        <h1>Ergebnis</h1>
+        <div class="score-val" id="final-score">0</div>
+        <p id="result-text"></p>
+        <button onclick="location.reload()" style="padding:15px; background:var(--accent-color); color:white; border:none; border-radius:10px; cursor:pointer; width:100%; font-weight:bold;">Nochmal versuchen</button>
+    </div>
+</div>
+
+<script>
+    const questions = [
+        {
+            textBefore: "Я плачу ",
+            textAfter: ".",
+            translation: "Ich bezahle mit der Karte.",
+            options: ["карта", "карту", "картой"],
+            correct: 2,
+            explanation: "Instrumental: Bei Zahlungsmitteln (womit?) nutzt man die Endung -ой."
+        },
+        {
+            textBefore: "У вас есть ",
+            textAfter: " магазина?",
+            translation: "Haben Sie eine Kundenkarte?",
+            options: ["карта", "карту", "картой"],
+            correct: 0,
+            explanation: "Nominativ: Nach „есть“ (es gibt/vorhanden sein) steht das Subjekt im Grundfall."
+        },
+        {
+            textBefore: "Вы собираете ",
+            textAfter: "?",
+            translation: "Sammeln Sie Aufkleber?",
+            options: ["наклейка", "наклейки", "наклейкой"],
+            correct: 1,
+            explanation: "Akkusativ Plural: Das direkte Objekt (wen oder was sammeln Sie?)."
+        },
+        {
+            textBefore: "Вам нужен ",
+            textAfter: "?",
+            translation: "Brauchen Sie eine Tüte?",
+            options: ["пакет", "пакета", "пакетом"],
+            correct: 0,
+            explanation: "Nominativ: Bei „нужен“ steht das Benötigte im Nominativ."
+        },
+        {
+            textBefore: "Я плачу ",
+            textAfter: ".",
+            translation: "Ich bezahle bar.",
+            options: ["наличные", "наличных", "наличными"],
+            correct: 2,
+            explanation: "Instrumental Plural: Das Mittel der Zahlung (womit?)."
+        },
+        {
+            textBefore: "У меня есть ",
+            textAfter: ".",
+            translation: "Ich habe Bonuspunkte.",
+            options: ["бонусы", "бонусов", "бонусами"],
+            correct: 0,
+            explanation: "Nominativ Plural: Vorhandensein von Dingen."
+        }
+    ];
+
+    let currentIdx = 0;
+    let score = 0;
+
+    const sentenceDisplay = document.getElementById('sentence-display');
+    const translationDisplay = document.getElementById('translation-display');
+    const optionsContainer = document.getElementById('options');
+    const nextBtn = document.getElementById('next-btn');
+    const feedbackEl = document.getElementById('feedback');
+    const progressFill = document.getElementById('progress-fill');
+
+    function loadQuestion() {
+        const q = questions[currentIdx];
+        feedbackEl.style.display = 'none';
+        nextBtn.style.display = 'none';
+        optionsContainer.innerHTML = '';
+        
+        sentenceDisplay.innerHTML = `${q.textBefore}<span class="placeholder">...</span>${q.textAfter}`;
+        translationDisplay.innerText = q.translation;
+
+        progressFill.style.width = `${(currentIdx / questions.length) * 100}%`;
+
+        q.options.forEach((opt, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerText = opt;
+            btn.onclick = () => selectOption(index, btn);
+            optionsContainer.appendChild(btn);
+        });
+    }
+
+    function selectOption(idx, btn) {
+        const q = questions[currentIdx];
+        const allBtns = document.querySelectorAll('.option-btn');
+        allBtns.forEach(b => b.disabled = true);
+
+        if (idx === q.correct) {
+            btn.classList.add('correct');
+            score++;
+            showFeedback(true, q.explanation);
+        } else {
+            btn.classList.add('wrong');
+            allBtns[q.correct].classList.add('correct');
+            showFeedback(false, q.explanation);
+        }
+
+        sentenceDisplay.innerHTML = `${q.textBefore}<span class="placeholder">${q.options[q.correct]}</span>${q.textAfter}`;
+        nextBtn.style.display = 'block';
+    }
+
+    function showFeedback(isCorrect, text) {
+        feedbackEl.style.display = 'block';
+        feedbackEl.className = 'feedback-box';
+        if (!isCorrect) {
+            feedbackEl.style.backgroundColor = '#fff3e0';
+            feedbackEl.style.color = '#e65100';
+            feedbackEl.style.borderColor = '#ffe0b2';
+        } else {
+            feedbackEl.style.backgroundColor = '#e8f5e9';
+            feedbackEl.style.color = '#2e7d32';
+            feedbackEl.style.borderColor = '#c8e6c9';
+        }
+        feedbackEl.innerHTML = `${isCorrect ? 'Richtig!' : 'Hinweis:'} <span class="feedback-explanation">${text}</span>`;
+    }
+
+    nextBtn.onclick = () => {
+        currentIdx++;
+        if (currentIdx < questions.length) {
+            loadQuestion();
+        } else {
+            showResults();
+        }
+    };
+
+    function showResults() {
+        progressFill.style.width = '100%';
+        document.getElementById('quiz-area').style.display = 'none';
+        const rs = document.getElementById('result-screen');
+        rs.style.display = 'block';
+        document.getElementById('final-score').innerText = `${score} / ${questions.length}`;
+        
+        const rt = document.getElementById('result-text');
+        if (score === questions.length) rt.innerText = "Hervorragend! Du beherrschst die Fälle aus diesem Dialog perfekt.";
+        else if (score >= questions.length / 2) rt.innerText = "Gut gemacht! Die wichtigsten Endungen sitzen schon.";
+        else rt.innerText = "Schau dir die Erklärungen zu den Fällen noch einmal an.";
+    }
+
+    loadQuestion();
+</script>
+
+</body>
+</html>
