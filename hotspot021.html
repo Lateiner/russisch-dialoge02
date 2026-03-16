@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Russisch-Lernspiel: Kassen-Hotspots (10er)</title>
+    <title>Russisch-Lernspiel: Emoji-Hotspots</title>
     <style>
         :root {
             --primary-color: #2c3e50;
@@ -27,7 +27,7 @@
 
         .container {
             width: 100%;
-            max-width: 800px;
+            max-width: 600px;
             background: white;
             padding: 20px;
             border-radius: 15px;
@@ -35,51 +35,61 @@
             text-align: center;
         }
 
+        /* Die Sprechblase des Kassierers */
         .speech-bubble {
             background: #e1f5fe;
             border: 2px solid var(--accent-color);
-            padding: 15px;
+            padding: 20px;
             border-radius: 12px;
-            font-size: 1.2rem;
+            font-size: 1.3rem;
             font-weight: bold;
             margin-bottom: 20px;
-            min-height: 40px;
+            min-height: 50px;
             display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
         }
 
-        /* Grafik-Container */
-        .image-container {
-            position: relative;
-            width: 100%;
-            background: #f9f9f9;
-            border-radius: 8px;
-            border: 2px solid #ddd;
-            overflow: hidden;
-            touch-action: none;
-        }
-
-        svg {
-            width: 100%;
-            height: auto;
-            display: block;
+        /* Das Spielfeld mit den Emojis */
+        .emoji-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 15px;
+            background: #ecf0f1;
+            padding: 20px;
+            border-radius: 12px;
+            border: 2px solid #bdc3c7;
+            margin-bottom: 20px;
         }
 
         .hotspot {
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 2.5rem;
+            padding: 10px;
             cursor: pointer;
-            fill: transparent;
-            stroke: none;
-            transition: all 0.3s;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            touch-action: manipulation;
         }
 
         /* Effekte */
-        .correct-flash { fill: rgba(46, 204, 113, 0.4) !important; stroke: var(--success-color) !important; stroke-width: 3; }
-        .wrong-flash { fill: rgba(231, 76, 60, 0.4) !important; stroke: var(--error-color) !important; stroke-width: 3; }
-        .solution-flash { fill: rgba(243, 156, 18, 0.4) !important; stroke: var(--solution-color) !important; stroke-width: 4; }
+        .hotspot:hover { transform: scale(1.05); border-color: var(--accent-color); }
+        .correct-flash { background-color: var(--success-color) !important; border-color: #27ae60 !important; }
+        .wrong-flash { background-color: var(--error-color) !important; border-color: #c0392b !important; }
+        .solution-flash { background-color: var(--solution-color) !important; border-color: #d35400 !important; animation: blink 0.5s repeat(4); }
+
+        @keyframes blink {
+            50% { opacity: 0.5; }
+        }
 
         .controls {
-            margin-top: 20px;
             display: flex;
             gap: 10px;
             justify-content: center;
@@ -87,7 +97,7 @@
         }
 
         button {
-            padding: 12px 20px;
+            padding: 12px 18px;
             border: none;
             border-radius: 6px;
             font-weight: bold;
@@ -101,78 +111,33 @@
         .btn-reset { background: #95a5a6; color: white; }
         button:disabled { opacity: 0.5; cursor: default; }
 
-        #feedback-text { margin-top: 15px; font-weight: bold; min-height: 1.5rem; }
-        #counter { font-size: 0.85rem; color: #7f8c8d; margin-top: 10px; }
+        #feedback-text { margin: 15px 0; font-weight: bold; min-height: 1.5rem; }
+        #counter { font-size: 0.85rem; color: #7f8c8d; }
+
+        /* Mobil-Anpassung */
+        @media (max-width: 480px) {
+            .emoji-grid { grid-template-columns: repeat(3, 1fr); }
+            .hotspot { font-size: 2rem; padding: 8px; }
+            .speech-bubble { font-size: 1.1rem; }
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
+    <h1>Supermarkt-Suche</h1>
+    <div id="counter">Aufgabe 1 von 10</div>
+    
     <div class="speech-bubble" id="phrase-bubble">Lädt...</div>
 
-    <div class="image-container">
-        <svg viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
-            <!-- Tischoberfläche -->
-            <rect x="0" y="300" width="800" height="150" fill="#bdc3c7" />
-            <rect x="0" y="300" width="800" height="10" fill="#95a5a6" />
-
-            <!-- 1. Kassenband (Лента) -->
-            <rect x="0" y="320" width="300" height="80" fill="#34495e" />
-            <rect id="belt" class="hotspot" x="0" y="310" width="300" height="100" />
-
-            <!-- 2. Scanner (Сканер) -->
-            <rect x="320" y="320" width="80" height="20" fill="#2c3e50" />
-            <rect x="330" y="322" width="60" height="10" fill="#e74c3c" opacity="0.5" />
-            <rect id="scanner" class="hotspot" x="310" y="310" width="100" height="40" />
-
-            <!-- 3. Terminal (Терминал) -->
-            <rect x="420" y="220" width="70" height="100" rx="5" fill="#2c3e50" />
-            <rect x="425" y="230" width="60" height="40" fill="#34495e" />
-            <rect id="terminal" class="hotspot" x="415" y="215" width="80" height="110" />
-
-            <!-- 4. Kassenbon-Drucker (Чек) -->
-            <rect x="520" y="260" width="60" height="50" fill="#7f8c8d" />
-            <rect x="530" y="220" width="40" height="40" fill="white" stroke="#ddd" />
-            <rect id="receipt" class="hotspot" x="515" y="215" width="70" height="100" />
-
-            <!-- 5. Kundenkarte auf dem Tisch (Карта) -->
-            <rect x="350" y="380" width="60" height="35" rx="3" fill="#3498db" />
-            <circle cx="365" cy="397" r="5" fill="white" opacity="0.3" />
-            <rect id="card" class="hotspot" x="340" y="370" width="80" height="50" />
-
-            <!-- 6. Plastiktüten (Пакет) -->
-            <path d="M620 250 Q650 220 680 250 L680 350 L620 350 Z" fill="#ecf0f1" stroke="#bdc3c7" />
-            <rect id="bags" class="hotspot" x="610" y="220" width="80" height="140" />
-
-            <!-- 7. Aufkleber-Box (Наклейки) -->
-            <rect x="710" y="330" width="60" height="40" fill="#f1c40f" />
-            <circle cx="725" cy="345" r="5" fill="white" />
-            <circle cx="750" cy="355" r="5" fill="white" />
-            <rect id="stickers" class="hotspot" x="705" y="325" width="70" height="50" />
-
-            <!-- 8. Bargeld/Münzen (Наличные) -->
-            <circle cx="480" cy="400" r="12" fill="#f39c12" stroke="#d35400" />
-            <circle cx="505" cy="405" r="12" fill="#f39c12" stroke="#d35400" />
-            <rect x="520" y="390" width="50" height="30" fill="#27ae60" />
-            <rect id="cash" class="hotspot" x="460" y="380" width="120" height="50" />
-
-            <!-- 9. Bildschirm mit Rabatt (Скидка) -->
-            <rect x="310" y="100" width="120" height="80" fill="#2c3e50" stroke="#000" stroke-width="4" />
-            <text x="335" y="150" fill="#2ecc71" font-family="Arial" font-size="30" font-weight="bold">%</text>
-            <rect id="discount" class="hotspot" x="305" y="95" width="130" height="90" />
-
-            <!-- 10. Bereich für Punkte (Бонусы) -->
-            <rect x="450" y="100" width="100" height="80" fill="#2c3e50" stroke="#000" stroke-width="4" />
-            <text x="490" y="150" fill="#f1c40f" font-family="Arial" font-size="40" text-anchor="middle">★</text>
-            <rect id="bonuses" class="hotspot" x="445" y="95" width="110" height="90" />
-        </svg>
+    <div class="emoji-grid" id="grid">
+        <!-- Emojis werden per JS geladen -->
     </div>
 
     <div id="feedback-text"></div>
-    <div id="counter">Frage 1 von 10</div>
 
     <div class="controls">
-        <button id="btn-next" class="btn-next" onclick="nextTask()" style="display:none;">Nächste Frage</button>
+        <button id="btn-next" class="btn-next" onclick="nextTask()" style="display:none;">Weiter</button>
         <button id="btn-solution" class="btn-solution" onclick="showSolution()">Lösung anzeigen</button>
         <button id="btn-reset" class="btn-reset" onclick="restartGame()">Neustart</button>
     </div>
@@ -180,89 +145,107 @@
 
 <script>
     const tasks = [
-        { phrase: "Вставляйте карту.", target: "terminal", msg: "Richtig! Das Terminal zum Einstecken der Karte." },
-        { phrase: "Ваш чек.", target: "receipt", msg: "Genau! Dort kommt der Kassenbon heraus." },
-        { phrase: "Пакет нужен?", target: "bags", msg: "Korrekt! Hier hängen die Plastiktüten." },
-        { phrase: "Наклейки собираете?", target: "stickers", msg: "Richtig! Die Sammel-Aufkleber sind in der gelben Box." },
-        { phrase: "Карта магазина есть?", target: "card", msg: "Richtig! Die Kundenkarte liegt auf dem Tresen." },
-        { phrase: "Бонусы списываем?", target: "bonuses", msg: "Genau! Der Kontostand der Bonuspunkte am Bildschirm." },
-        { phrase: "Со скидкой...", target: "discount", msg: "Richtig! Das Prozentzeichen zeigt den Rabatt an." },
-        { phrase: "Платить наличными.", target: "cash", msg: "Korrekt! Scheine und Münzen sind Bargeld." },
-        { phrase: "Положите продукты на ленту.", target: "belt", msg: "Richtig! Das ist das Kassenband." },
-        { phrase: "Сканировать товар.", target: "scanner", msg: "Genau! Mit dem Laser wird der Preis gescannt." }
+        { emoji: "💳", phrase: "Вставляйте карту.", msg: "Richtig! Das ist das Terminal für die Karte." },
+        { emoji: "🧾", phrase: "Ваш чек.", msg: "Genau! Das ist der Kassenbon." },
+        { emoji: "🛍️", phrase: "Пакет нужен?", msg: "Korrekt! Die Einkaufstüte." },
+        { emoji: "✨", phrase: "Наклейки собираете?", msg: "Richtig! Die Sammel-Aufkleber." },
+        { emoji: "🪪", phrase: "Карта магазина есть?", msg: "Richtig! Das ist die Kundenkarte." },
+        { emoji: "⭐", phrase: "Бонусы списываем?", msg: "Genau! Das sind die Bonuspunkte." },
+        { emoji: "🏷️", phrase: "Со скидкой...", msg: "Richtig! Das Etikett steht für den Rabatt." },
+        { emoji: "💵", phrase: "Платить наличными.", msg: "Korrekt! Das Bargeld." },
+        { emoji: "🛒", phrase: "Положите на ленту.", msg: "Richtig! Die Waren im Wagen/auf dem Band." },
+        { emoji: "🔦", phrase: "Сканировать товар.", msg: "Genau! Der Scanner erfasst den Preis." }
     ];
 
     let currentIdx = 0;
     let canClick = true;
+    let shuffledTasks = [];
 
     const phraseBubble = document.getElementById('phrase-bubble');
     const feedbackText = document.getElementById('feedback-text');
     const btnNext = document.getElementById('btn-next');
     const counterText = document.getElementById('counter');
-    const hotspots = document.querySelectorAll('.hotspot');
+    const grid = document.getElementById('grid');
 
-    function initTask() {
-        if(currentIdx >= tasks.length) {
+    function initGame() {
+        currentIdx = 0;
+        // Aufgaben für die Anzeige mischen, aber die Emojis im Grid fest lassen
+        shuffledTasks = [...tasks].sort(() => Math.random() - 0.5);
+        renderGrid();
+        loadTask();
+    }
+
+    function renderGrid() {
+        grid.innerHTML = '';
+        // Emojis werden immer in der gleichen (festen) Reihenfolge im Grid angezeigt
+        tasks.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'hotspot';
+            div.innerText = item.emoji;
+            div.dataset.emoji = item.emoji;
+            div.onclick = () => handleCheck(div);
+            grid.appendChild(div);
+        });
+    }
+
+    function loadTask() {
+        if (currentIdx >= shuffledTasks.length) {
             phraseBubble.innerText = "Hervorragend!";
-            feedbackText.innerText = "Du hast alle 10 Objekte gefunden.";
-            counterText.innerText = "Übung beendet.";
+            feedbackText.innerText = "Du hast alle Begriffe gefunden.";
             btnNext.style.display = "none";
-            document.getElementById('btn-solution').disabled = true;
             return;
         }
         canClick = true;
-        const task = tasks[currentIdx];
+        const task = shuffledTasks[currentIdx];
         phraseBubble.innerText = `„${task.phrase}“`;
         feedbackText.innerText = "";
-        feedbackText.style.color = "inherit";
         btnNext.style.display = "none";
-        counterText.innerText = `Frage ${currentIdx + 1} von ${tasks.length}`;
+        counterText.innerText = `Aufgabe ${currentIdx + 1} von 10`;
         
-        hotspots.forEach(h => h.classList.remove('correct-flash', 'wrong-flash', 'solution-flash'));
+        document.querySelectorAll('.hotspot').forEach(h => {
+            h.classList.remove('correct-flash', 'wrong-flash', 'solution-flash');
+        });
     }
 
-    hotspots.forEach(h => {
-        h.addEventListener('click', function() {
-            if(!canClick) return;
-            const target = tasks[currentIdx].target;
-            if(this.id === target) {
-                canClick = false;
-                this.classList.add('correct-flash');
-                feedbackText.innerText = tasks[currentIdx].msg;
-                feedbackText.style.color = "var(--success-color)";
-                btnNext.style.display = "inline-block";
-            } else {
-                this.classList.add('wrong-flash');
-                setTimeout(() => this.classList.remove('wrong-flash'), 500);
-                feedbackText.innerText = "Versuch es nochmal!";
-                feedbackText.style.color = "var(--error-color)";
-            }
-        });
-    });
+    function handleCheck(el) {
+        if (!canClick) return;
+        
+        if (el.innerText === shuffledTasks[currentIdx].emoji) {
+            canClick = false;
+            el.classList.add('correct-flash');
+            feedbackText.innerText = shuffledTasks[currentIdx].msg;
+            feedbackText.style.color = "var(--success-color)";
+            btnNext.style.display = "inline-block";
+        } else {
+            el.classList.add('wrong-flash');
+            setTimeout(() => el.classList.remove('wrong-flash'), 500);
+            feedbackText.innerText = "Versuch es nochmal!";
+            feedbackText.style.color = "var(--error-color)";
+        }
+    }
 
     function nextTask() {
         currentIdx++;
-        initTask();
+        loadTask();
     }
 
     function showSolution() {
-        if(!canClick) return;
-        const targetId = tasks[currentIdx].target;
-        const targetEl = document.getElementById(targetId);
-        targetEl.classList.add('solution-flash');
-        setTimeout(() => targetEl.classList.remove('solution-flash'), 2000);
-        feedbackText.innerText = "Hier befindet sich das Objekt.";
-        feedbackText.style.color = "var(--solution-color)";
+        if (!canClick) return;
+        const correctEmoji = shuffledTasks[currentIdx].emoji;
+        const hotspots = document.querySelectorAll('.hotspot');
+        hotspots.forEach(h => {
+            if (h.innerText === correctEmoji) {
+                h.classList.add('solution-flash');
+                setTimeout(() => h.classList.remove('solution-flash'), 2000);
+            }
+        });
     }
 
     function restartGame() {
-        currentIdx = 0;
-        document.getElementById('btn-solution').disabled = false;
-        initTask();
+        initGame();
     }
 
-    // Start
-    initTask();
+    initGame();
 </script>
 
 </body>
