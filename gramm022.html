@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch-Grammatik: Genau oder Ungefähr?</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <style>
+        :root {
+            --exact-color: #2980b9;
+            --approx-color: #8e44ad;
+            --success-color: #27ae60;
+            --error-color: #c0392b;
+            --bg-color: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+        }
+
+        h1 { font-size: 1.4rem; text-align: center; color: #2c3e50; }
+
+        .instruction {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .instruction b { color: var(--exact-color); }
+
+        /* Wort-Pool */
+        .pool-area {
+            background: #dfe6e9;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            border: 2px dashed #b2bec3;
+            min-height: 60px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        /* Die Ziel-Zonen */
+        .zones-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .zone {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            min-height: 250px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            transition: background 0.3s;
+        }
+
+        .zone-title {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .exact-title { color: var(--exact-color); }
+        .approx-title { color: var(--approx-color); }
+
+        .drop-list {
+            flex-grow: 1;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        /* Die Karten */
+        .card {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            text-align: center;
+            cursor: grab;
+            font-size: 1rem;
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            touch-action: manipulation;
+        }
+
+        .card:active { cursor: grabbing; }
+
+        .card.correct { border: 2px solid var(--success-color); background-color: #e8f5e9; }
+        .card.wrong { border: 2px solid var(--error-color); background-color: #ffebee; }
+
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            min-width: 140px;
+        }
+
+        #solution-btn { background: #f39c12; color: white; }
+        #reset-btn { background: #95a5a6; color: white; }
+
+        #feedback-msg {
+            text-align: center;
+            margin-top: 15px;
+            font-weight: bold;
+            min-height: 20px;
+        }
+
+        /* Mobil-Ansicht */
+        @media (max-width: 600px) {
+            .zones-container { grid-template-columns: 1fr; }
+            .zone { min-height: 150px; }
+            button { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Genau oder ungefähr?</h1>
+
+    <div class="instruction">
+        Im Russischen ändert die Reihenfolge die Bedeutung: <br>
+        1. <b>Zahl + Gramm</b> = Punktgenau (300g). <br>
+        2. <b>Gramm + Zahl</b> = Ungefähr (etwa 300g). <br>
+        Ordne die Karten der richtigen Kategorie zu!
+    </div>
+
+    <div class="pool-area" id="pool">
+        <!-- Karten kommen per JS -->
+    </div>
+
+    <div class="zones-container">
+        <div class="zone">
+            <div class="zone-title exact-title">Punktgenaue Menge</div>
+            <div id="zone-exact" class="drop-list"></div>
+        </div>
+        <div class="zone">
+            <div class="zone-title approx-title">Ungefähre Menge („etwa“)</div>
+            <div id="zone-approx" class="drop-list"></div>
+        </div>
+    </div>
+
+    <div id="feedback-msg"></div>
+
+    <div class="controls">
+        <button id="solution-btn" onclick="showSolution()">Lösung anzeigen</button>
+        <button id="reset-btn" onclick="initGame()">Neu starten</button>
+    </div>
+</div>
+
+<script>
+    // 'e' für exact, 'a' für approx
+    const data = [
+        { text: "Триста грамм", type: "e" },
+        { text: "Грамм триста", type: "a" },
+        { text: "Пятьсот грамм", type: "e" },
+        { text: "Грамм пятьсот", type: "a" },
+        { text: "Килограмм", type: "e" },
+        { text: "Килограмма два", type: "a" },
+        { text: "Двести грамм", type: "e" },
+        { text: "Грамм двести", type: "a" }
+    ];
+
+    const poolEl = document.getElementById('pool');
+    const exactEl = document.getElementById('zone-exact');
+    const approxEl = document.getElementById('zone-approx');
+    const feedbackMsg = document.getElementById('feedback-msg');
+
+    function validateCard(card, targetId) {
+        card.classList.remove('correct', 'wrong');
+        const type = card.dataset.type;
+
+        if (targetId === 'zone-exact') {
+            if (type === 'e') card.classList.add('correct');
+            else card.classList.add('wrong');
+        } else if (targetId === 'zone-approx') {
+            if (type === 'a') card.classList.add('correct');
+            else card.classList.add('wrong');
+        }
+        
+        checkWin();
+    }
+
+    function checkWin() {
+        const totalPlaced = exactEl.children.length + approxEl.children.length;
+        const totalWrong = document.querySelectorAll('.wrong').length;
+
+        if (totalPlaced === data.length && totalWrong === 0) {
+            feedbackMsg.innerText = "Hervorragend! Du hast den Gramm-Dreher verstanden. 🎉";
+            feedbackMsg.style.color = "var(--success-color)";
+        } else {
+            feedbackMsg.innerText = "";
+        }
+    }
+
+    const sortableConfig = {
+        group: 'quantities',
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        onEnd: (evt) => {
+            validateCard(evt.item, evt.to.id);
+        }
+    };
+
+    new Sortable(poolEl, sortableConfig);
+    new Sortable(exactEl, sortableConfig);
+    new Sortable(approxEl, sortableConfig);
+
+    function initGame() {
+        poolEl.innerHTML = '';
+        exactEl.innerHTML = '';
+        approxEl.innerHTML = '';
+        feedbackMsg.innerText = '';
+
+        const shuffled = [...data].sort(() => Math.random() - 0.5);
+        shuffled.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'card';
+            div.innerText = item.text;
+            div.dataset.type = item.type;
+            poolEl.appendChild(div);
+        });
+    }
+
+    function showSolution() {
+        exactEl.innerHTML = '';
+        approxEl.innerHTML = '';
+        poolEl.innerHTML = '';
+        
+        data.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'card correct';
+            div.innerText = item.text;
+            if (item.type === 'e') exactEl.appendChild(div);
+            else approxEl.appendChild(div);
+        });
+        feedbackMsg.innerText = "Lösung wird angezeigt.";
+    }
+
+    initGame();
+</script>
+
+</body>
+</html>
