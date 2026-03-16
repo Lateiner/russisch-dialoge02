@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch-Lernspiel: Wort-Schüttelsatz</title>
+    <!-- SortableJS für flüssiges Drag & Drop auf allen Geräten -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #34495e;
+            --accent-color: #3498db;
+            --success-color: #2ecc71;
+            --error-color: #e74c3c;
+            --bg-color: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--primary-color);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        h1 { font-size: 1.4rem; margin-bottom: 10px; }
+
+        .instruction {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            margin-bottom: 20px;
+        }
+
+        /* Anzeige der Übersetzung */
+        .translation-box {
+            background: #e1f5fe;
+            border-left: 5px solid var(--accent-color);
+            padding: 15px;
+            margin-bottom: 25px;
+            font-style: italic;
+            font-size: 1.1rem;
+            color: #2c3e50;
+        }
+
+        /* Bereich für die Schüttel-Wörter */
+        #word-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            padding: 20px;
+            background: #f9f9f9;
+            border: 2px dashed #ddd;
+            border-radius: 12px;
+            min-height: 60px;
+            list-style: none;
+            margin: 0 0 20px 0;
+        }
+
+        .word-tile {
+            background: white;
+            border: 2px solid var(--accent-color);
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: grab;
+            font-size: 1.1rem;
+            font-weight: 500;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.05);
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        .word-tile:active { cursor: grabbing; }
+
+        /* Sortable Ghost (während des Ziehens) */
+        .sortable-ghost {
+            opacity: 0.3;
+            background: var(--accent-color);
+        }
+
+        /* Feedback-Farben */
+        .correct-sentence {
+            border-color: var(--success-color) !important;
+            background-color: #e8f5e9 !important;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            min-width: 130px;
+        }
+
+        .btn-check { background: var(--accent-color); color: white; }
+        .btn-solution { background: #f39c12; color: white; }
+        .btn-next { background: var(--success-color); color: white; }
+        .btn-reset { background: #95a5a6; color: white; }
+
+        #feedback-msg {
+            margin-top: 15px;
+            font-weight: bold;
+            min-height: 1.5rem;
+        }
+
+        @media (max-width: 480px) {
+            .word-tile { padding: 8px 14px; font-size: 1rem; }
+            button { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Sätze ordnen</h1>
+    <div class="instruction">Bringe die Wörter in die richtige Reihenfolge.</div>
+
+    <div class="translation-box" id="translation">
+        Lädt...
+    </div>
+
+    <ul id="word-list">
+        <!-- Wörter werden per JS eingefügt -->
+    </ul>
+
+    <div id="feedback-msg"></div>
+
+    <div class="controls">
+        <button id="btn-check" class="btn-check" onclick="checkOrder()">Prüfen</button>
+        <button id="btn-solution" class="btn-solution" onclick="showSolution()">Lösung zeigen</button>
+        <button id="btn-next" class="btn-next" onclick="nextSentence()" style="display:none;">Nächster Satz</button>
+        <button id="btn-reset" class="btn-reset" onclick="restartSentence()">Neu mischen</button>
+    </div>
+</div>
+
+<script>
+    const sentences = [
+        {
+            correct: ["Карта", "магазина", "у", "вас", "есть?"],
+            translation: "Haben Sie eine Kundenkarte?"
+        },
+        {
+            correct: ["Вам", "нужен", "пакет?"],
+            translation: "Brauchen Sie eine Tüte?"
+        },
+        {
+            correct: ["Бонусы", "списывать", "будем?"],
+            translation: "Werden wir Bonuspunkte verrechnen?"
+        },
+        {
+            correct: ["Вы", "собираете", "наклейки?"],
+            translation: "Sammeln Sie Aufkleber?"
+        },
+        {
+            correct: ["Вы", "будете", "платить", "картой?"],
+            translation: "Werden Sie mit Karte bezahlen?"
+        }
+    ];
+
+    let currentIdx = 0;
+    const wordList = document.getElementById('word-list');
+    const translationBox = document.getElementById('translation');
+    const feedbackMsg = document.getElementById('feedback-msg');
+    const btnNext = document.getElementById('btn-next');
+    const btnCheck = document.getElementById('btn-check');
+
+    // SortableJS initialisieren
+    let sortable = new Sortable(wordList, {
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        onStart: () => {
+            feedbackMsg.innerText = "";
+            resetTileColors();
+        }
+    });
+
+    function shuffle(array) {
+        let shuffled = [...array];
+        // Sicherstellen, dass die Reihenfolge wirklich anders ist
+        while (JSON.stringify(shuffled) === JSON.stringify(array)) {
+            shuffled.sort(() => Math.random() - 0.5);
+        }
+        return shuffled;
+    }
+
+    function initSentence() {
+        const s = sentences[currentIdx];
+        translationBox.innerText = s.translation;
+        wordList.innerHTML = '';
+        feedbackMsg.innerText = '';
+        btnNext.style.display = 'none';
+        btnCheck.style.display = 'inline-block';
+
+        const shuffledWords = shuffle(s.correct);
+        shuffledWords.forEach(word => {
+            const li = document.createElement('li');
+            li.className = 'word-tile';
+            li.innerText = word;
+            wordList.appendChild(li);
+        });
+    }
+
+    function checkOrder() {
+        const currentOrder = Array.from(wordList.children).map(li => li.innerText);
+        const correctOrder = sentences[currentIdx].correct;
+
+        if (JSON.stringify(currentOrder) === JSON.stringify(correctOrder)) {
+            feedbackMsg.innerText = "Hervorragend! Der Satz ist korrekt. 🎉";
+            feedbackMsg.style.color = "var(--success-color)";
+            
+            Array.from(wordList.children).forEach(li => li.classList.add('correct-sentence'));
+            btnNext.style.display = 'inline-block';
+            btnCheck.style.display = 'none';
+        } else {
+            feedbackMsg.innerText = "Noch nicht ganz richtig. Versuche es weiter!";
+            feedbackMsg.style.color = "var(--error-color)";
+        }
+    }
+
+    function showSolution() {
+        wordList.innerHTML = '';
+        sentences[currentIdx].correct.forEach(word => {
+            const li = document.createElement('li');
+            li.className = 'word-tile correct-sentence';
+            li.innerText = word;
+            wordList.appendChild(li);
+        });
+        feedbackMsg.innerText = "Lösung angezeigt.";
+        feedbackMsg.style.color = "#f39c12";
+        btnNext.style.display = 'inline-block';
+        btnCheck.style.display = 'none';
+    }
+
+    function resetTileColors() {
+        Array.from(wordList.children).forEach(li => {
+            li.classList.remove('correct-sentence');
+        });
+    }
+
+    function nextSentence() {
+        currentIdx++;
+        if (currentIdx >= sentences.length) {
+            currentIdx = 0; // Loop oder Abschlussmeldung
+            alert("Du hast alle Sätze geübt!");
+        }
+        initSentence();
+    }
+
+    function restartSentence() {
+        initSentence();
+    }
+
+    // Erster Start
+    initSentence();
+</script>
+
+</body>
+</html>
