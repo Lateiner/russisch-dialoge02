@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch-Lernspiel: Wer sagt was? (Direktes Feedback)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <style>
+        :root {
+            --kassierer-color: #3498db;
+            --kaeufer-color: #9b59b6;
+            --success-color: #2ecc71;
+            --error-color: #e74c3c;
+            --bg-color: #f0f3f5;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+
+        .instruction {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            font-size: 0.95rem;
+            text-align: center;
+        }
+
+        /* Bereich für die ungeordneten Sätze */
+        .pool-container {
+            background: #dfe6e9;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            min-height: 80px;
+            border: 2px dashed #b2bec3;
+        }
+
+        .pool-title {
+            text-align: center;
+            margin-top: 0;
+            font-size: 0.8rem;
+            color: #636e72;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        /* Die zwei Spalten */
+        .zones-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .zone {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            min-height: 350px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            transition: background-color 0.3s;
+        }
+
+        .zone-title {
+            text-align: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f8f9fa;
+            font-weight: bold;
+        }
+
+        .kassierer-title { color: var(--kassierer-color); }
+        .kaeufer-title { color: var(--kaeufer-color); }
+
+        /* Listen-Styles */
+        .drop-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            flex-grow: 1;
+            min-height: 100px;
+        }
+
+        .phrase-card {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            cursor: grab;
+            font-size: 0.95rem;
+            box-shadow: 0 2px 3px rgba(0,0,0,0.05);
+            transition: all 0.2s ease;
+            touch-action: manipulation;
+            text-align: center;
+        }
+
+        .phrase-card:active { cursor: grabbing; }
+
+        /* Zustände für direktes Feedback */
+        .phrase-card.correct {
+            border: 2px solid var(--success-color);
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .phrase-card.wrong {
+            border: 2px solid var(--error-color);
+            background-color: #ffebee;
+            color: #c62828;
+        }
+
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            min-width: 150px;
+            transition: background 0.2s;
+        }
+
+        #solution-btn { background: #f39c12; color: white; }
+        #reset-btn { background: #95a5a6; color: white; }
+        button:hover { opacity: 0.9; }
+
+        #feedback-msg {
+            text-align: center;
+            margin-top: 15px;
+            font-weight: bold;
+            min-height: 20px;
+            font-size: 1.1rem;
+        }
+
+        /* Mobil-Anpassung */
+        @media (max-width: 600px) {
+            .zones-grid { grid-template-columns: 1fr; }
+            .zone { min-height: 200px; }
+            button { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Wer sagt was?</h1>
+
+    <div class="instruction">
+        Ziehe die Sätze in die richtige Spalte. Du erhältst sofort Feedback!
+    </div>
+
+    <div class="pool-container">
+        <p class="pool-title">Sätze zum Zuordnen</p>
+        <div id="pool" class="drop-list"></div>
+    </div>
+
+    <div class="zones-grid">
+        <div class="zone" id="zone-k">
+            <div class="zone-title kassierer-title">Кассир (Kassierer)</div>
+            <div id="kassierer-list" class="drop-list"></div>
+        </div>
+        <div class="zone" id="zone-p">
+            <div class="zone-title kaeufer-title">Покупатель (Käufer)</div>
+            <div id="kaeufer-list" class="drop-list"></div>
+        </div>
+    </div>
+
+    <div id="feedback-msg"></div>
+
+    <div class="controls">
+        <button id="solution-btn">Lösung anzeigen</button>
+        <button id="reset-btn">Neu starten</button>
+    </div>
+</div>
+
+<script>
+    // 'k' für Kassierer, 'p' für Käufer
+    const phrases = [
+        { text: "Здравствуйте! Пакет нужен?", role: "k" },
+        { text: "Здравствуйте! Нет, спасибо.", role: "p" },
+        { text: "Карта магазина есть?", role: "k" },
+        { text: "Да, пожалуйста.", role: "p" },
+        { text: "Бонусы списываем?", role: "k" },
+        { text: "Давайте.", role: "p" },
+        { text: "Пятнадцать рублей.", role: "k" },
+        { text: "Хорошо.", role: "p" },
+        { text: "Картой или наличными?", role: "k" },
+        { text: "Картой.", role: "p" },
+        { text: "Вставляйте.", role: "k" },
+        { text: "Наклейки собираете?", role: "k" },
+        { text: "Да.", role: "p" },
+        { text: "Ваш чек. До свидания.", role: "k" }
+    ];
+
+    const poolEl = document.getElementById('pool');
+    const kassiererEl = document.getElementById('kassierer-list');
+    const kaeuferEl = document.getElementById('kaeufer-list');
+    const feedbackMsg = document.getElementById('feedback-msg');
+
+    // Funktion zur Validierung einer einzelnen Karte
+    function validateCard(card, targetListId) {
+        card.classList.remove('correct', 'wrong');
+        
+        if (targetListId === 'kassierer-list') {
+            if (card.dataset.role === 'k') {
+                card.classList.add('correct');
+            } else {
+                card.classList.add('wrong');
+            }
+        } else if (targetListId === 'kaeufer-list') {
+            if (card.dataset.role === 'p') {
+                card.classList.add('correct');
+            } else {
+                card.classList.add('wrong');
+            }
+        }
+        // Wenn zurück im Pool: bleibt neutral (Klassen bereits entfernt)
+        
+        checkWinCondition();
+    }
+
+    function checkWinCondition() {
+        const totalPlaced = kassiererEl.children.length + kaeuferEl.children.length;
+        const totalWrong = document.querySelectorAll('.wrong').length;
+
+        if (totalPlaced === phrases.length && totalWrong === 0) {
+            feedbackMsg.innerText = "Hervorragend! Alles richtig zugeordnet. 🎉";
+            feedbackMsg.style.color = "var(--success-color)";
+        } else {
+            feedbackMsg.innerText = "";
+        }
+    }
+
+    // Sortable initialisieren
+    const config = {
+        group: 'dialog',
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        onEnd: (evt) => {
+            // evt.to ist die Liste, in der die Karte gelandet ist
+            validateCard(evt.item, evt.to.id);
+        }
+    };
+
+    new Sortable(poolEl, config);
+    new Sortable(kassiererEl, config);
+    new Sortable(kaeuferEl, config);
+
+    function shuffle(array) {
+        return array.sort(() => Math.random() - 0.5);
+    }
+
+    function init() {
+        poolEl.innerHTML = '';
+        kassiererEl.innerHTML = '';
+        kaeuferEl.innerHTML = '';
+        feedbackMsg.innerText = '';
+
+        shuffle([...phrases]).forEach(phrase => {
+            const div = document.createElement('div');
+            div.className = 'phrase-card';
+            div.innerText = phrase.text;
+            div.dataset.role = phrase.role;
+            poolEl.appendChild(div);
+        });
+    }
+
+    document.getElementById('solution-btn').addEventListener('click', () => {
+        kassiererEl.innerHTML = '';
+        kaeuferEl.innerHTML = '';
+        poolEl.innerHTML = '';
+        
+        phrases.forEach(phrase => {
+            const div = document.createElement('div');
+            div.className = 'phrase-card correct';
+            div.innerText = phrase.text;
+            if (phrase.role === 'k') {
+                kassiererEl.appendChild(div);
+            } else {
+                kaeuferEl.appendChild(div);
+            }
+        });
+        feedbackMsg.innerText = "Lösung angezeigt.";
+        feedbackMsg.style.color = "#f39c12";
+    });
+
+    document.getElementById('reset-btn').addEventListener('click', init);
+
+    init();
+</script>
+
+</body>
+</html>
