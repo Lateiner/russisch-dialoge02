@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch-Lernspiel: Dialog-Puzzle</title>
+    <!-- Einbindung der SortableJS Bibliothek für flüssiges Drag & Drop auf allen Geräten -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --success-color: #2ecc71;
+            --error-color: #e74c3c;
+            --warning-color: #f39c12;
+            --bg-color: #f4f7f6;
+            --text-color: #2c3e50;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 650px;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .instruction {
+            background: #e1f5fe;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        #dialog-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .dialog-item {
+            background: #fff;
+            border: 2px solid #ddd;
+            margin-bottom: 8px;
+            padding: 12px 15px;
+            border-radius: 8px;
+            cursor: grab;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            font-size: 1rem;
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        .dialog-item:active {
+            cursor: grabbing;
+        }
+
+        .dialog-item.sortable-ghost {
+            opacity: 0.4;
+            background-color: var(--primary-color);
+        }
+
+        .dialog-item.correct {
+            border-color: var(--success-color);
+            background-color: #e8f5e9;
+        }
+
+        .dialog-item.wrong {
+            border-color: var(--error-color);
+            background-color: #ffebee;
+        }
+
+        .controls {
+            margin-top: 25px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap; /* Erlaubt Umbruch auf kleinen Bildschirmen */
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 20px;
+            font-size: 0.95rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.1s;
+            font-weight: bold;
+            min-width: 140px;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        #check-btn {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        #solution-btn {
+            background-color: var(--warning-color);
+            color: white;
+        }
+
+        #reset-btn {
+            background-color: #95a5a6;
+            color: white;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        #feedback {
+            margin-top: 20px;
+            text-align: center;
+            font-weight: bold;
+            min-height: 24px;
+        }
+
+        /* Responsive Anpassungen für kleine Bildschirme */
+        @media (max-width: 480px) {
+            body { padding: 10px; }
+            h1 { font-size: 1.2rem; }
+            .dialog-item { font-size: 0.9rem; padding: 10px; }
+            button { 
+                flex: 1 1 100%; /* Buttons nehmen volle Breite ein auf sehr kleinen Displays */
+                padding: 12px 10px; 
+            }
+            .controls { gap: 8px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Dialog-Puzzle</h1>
+    
+    <div class="instruction">
+        <strong>Aufgabe:</strong> Bringe den Dialog im Supermarkt in die richtige Reihenfolge. Schiebe die Kacheln mit der Maus oder dem Finger an die richtige Stelle.
+    </div>
+
+    <ul id="dialog-list">
+        <!-- Die Kacheln werden per JavaScript eingefügt -->
+    </ul>
+
+    <div id="feedback"></div>
+
+    <div class="controls">
+        <button id="check-btn">Prüfen</button>
+        <button id="solution-btn">Lösung anzeigen</button>
+        <button id="reset-btn">Neu mischen</button>
+    </div>
+</div>
+
+<script>
+    // Der korrekte Dialog in der richtigen Reihenfolge
+    const correctOrder = [
+        "Здравствуйте! Пакет нужен?",
+        "Здравствуйте! Нет, спасибо.",
+        "Карта магазина есть?",
+        "Да, пожалуйста.",
+        "Бонусы списываем?",
+        "Давайте.",
+        "Пятнадцать рублей.",
+        "Хорошо.",
+        "Со скидкой – тысяча четыреста семьдесят пять девяносто три. Картой или наличными?",
+        "Картой.",
+        "Вставляйте.",
+        "Наклейки собираете?",
+        "Да.",
+        "Ваш чек. До свидания."
+    ];
+
+    const dialogList = document.getElementById('dialog-list');
+    const feedback = document.getElementById('feedback');
+    const checkBtn = document.getElementById('check-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const solutionBtn = document.getElementById('solution-btn');
+
+    // Funktion zum Mischen (Fisher-Yates Shuffle)
+    function shuffle(array) {
+        let currentIndex = array.length, randomIndex;
+        while (currentIndex != 0) {
+            randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex--;
+            [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+        }
+        return array;
+    }
+
+    // Spiel initialisieren
+    function initGame() {
+        dialogList.innerHTML = '';
+        feedback.innerText = '';
+        feedback.style.color = 'inherit';
+        
+        const shuffled = shuffle([...correctOrder]);
+        
+        shuffled.forEach(text => {
+            const li = document.createElement('li');
+            li.className = 'dialog-item';
+            li.innerText = text;
+            dialogList.appendChild(li);
+        });
+    }
+
+    // Sortable Initialisierung
+    new Sortable(dialogList, {
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        onStart: () => {
+            resetFeedbackStyles();
+        }
+    });
+
+    function resetFeedbackStyles() {
+        const items = document.querySelectorAll('.dialog-item');
+        items.forEach(item => {
+            item.classList.remove('correct', 'wrong');
+        });
+        feedback.innerText = '';
+    }
+
+    // Überprüfung der Antwort
+    checkBtn.addEventListener('click', () => {
+        const currentItems = document.querySelectorAll('.dialog-item');
+        let correctCount = 0;
+
+        currentItems.forEach((item, index) => {
+            if (item.innerText === correctOrder[index]) {
+                item.classList.add('correct');
+                item.classList.remove('wrong');
+                correctCount++;
+            } else {
+                item.classList.add('wrong');
+                item.classList.remove('correct');
+            }
+        });
+
+        if (correctCount === correctOrder.length) {
+            feedback.innerText = "Ausgezeichnet! Alles ist in der richtigen Reihenfolge.";
+            feedback.style.color = "var(--success-color)";
+        } else {
+            feedback.innerText = "Noch nicht ganz richtig. Überprüfe die rot markierten Stellen.";
+            feedback.style.color = "var(--error-color)";
+        }
+    });
+
+    // Lösung anzeigen
+    solutionBtn.addEventListener('click', () => {
+        dialogList.innerHTML = '';
+        correctOrder.forEach(text => {
+            const li = document.createElement('li');
+            li.className = 'dialog-item correct'; // Direkt als korrekt markieren
+            li.innerText = text;
+            dialogList.appendChild(li);
+        });
+        feedback.innerText = "Hier ist die korrekte Reihenfolge angezeigt.";
+        feedback.style.color = "var(--warning-color)";
+    });
+
+    resetBtn.addEventListener('click', initGame);
+
+    // Erster Start
+    initGame();
+</script>
+
+</body>
+</html>
