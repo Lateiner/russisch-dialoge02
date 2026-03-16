@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch-Lernspiel: Lückentext Supermarkt</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --success-color: #2ecc71;
+            --error-color: #e74c3c;
+            --bg-color: #f8f9fa;
+            --word-bg: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 700px;
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+
+        h1 {
+            color: #2c3e50;
+            font-size: 1.4rem;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .instruction {
+            background: #e1f5fe;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        /* Wortbank oben fixiert */
+        .word-bank {
+            background: #eceff1;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            min-height: 50px;
+            border: 2px dashed #cfd8dc;
+        }
+
+        .word-card {
+            background: var(--word-bg);
+            border: 1px solid #b0bec5;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: grab;
+            font-size: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        .word-card:active { cursor: grabbing; }
+
+        /* Dialog-Bereich */
+        .dialog-area {
+            line-height: 2.2;
+            font-size: 1.05rem;
+        }
+
+        .line {
+            margin-bottom: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .role {
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-right: 5px;
+            min-width: 100px;
+        }
+
+        /* Die Lücken im Text */
+        .gap {
+            display: inline-flex;
+            min-width: 100px;
+            height: 32px;
+            border-bottom: 2px solid #bdc3c7;
+            background: #fdfdfd;
+            vertical-align: middle;
+            margin: 0 5px;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .gap.highlight {
+            background: #fff9c4;
+            border-bottom-color: var(--primary-color);
+        }
+
+        /* Farben für direktes Feedback */
+        .word-card.correct {
+            background-color: var(--success-color) !important;
+            color: white;
+            border-color: #27ae60;
+        }
+
+        .word-card.wrong {
+            background-color: var(--error-color) !important;
+            color: white;
+            border-color: #c0392b;
+        }
+
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s;
+        }
+
+        #solution-btn { background: #f39c12; color: white; }
+        #reset-btn { background: #95a5a6; color: white; }
+        button:active { transform: scale(0.95); }
+
+        #win-msg {
+            text-align: center;
+            margin-top: 20px;
+            color: var(--success-color);
+            font-weight: bold;
+            min-height: 24px;
+        }
+
+        @media (max-width: 480px) {
+            .role { min-width: 100%; margin-bottom: 2px; }
+            .line { margin-bottom: 20px; }
+            h1 { font-size: 1.2rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Dialog vervollständigen</h1>
+    
+    <div class="instruction">
+        Ziehe die Wörter aus der Wortbank in die richtigen Lücken im Dialog.
+    </div>
+
+    <div id="pool" class="word-bank">
+        <!-- Wörter kommen per JS -->
+    </div>
+
+    <div class="dialog-area">
+        <div class="line"><span class="role">Кассир:</span> Здравствуйте! <div class="gap" data-answer="Пакет"></div> нужен?</div>
+        <div class="line"><span class="role">Покупатель:</span> Здравствуйте! Нет, спасибо.</div>
+        <div class="line"><span class="role">Кассир:</span> <div class="gap" data-answer="Карта"></div> магазина есть?</div>
+        <div class="line"><span class="role">Покупатель:</span> Да, пожалуйста.</div>
+        <div class="line"><span class="role">Кассир:</span> <div class="gap" data-answer="Бонусы"></div> списываем?</div>
+        <div class="line"><span class="role">Покупатель:</span> Давайте.</div>
+        <div class="line"><span class="role">Кассир:</span> Пятнадцать рублей.</div>
+        <div class="line"><span class="role">Покупатель:</span> Хорошо.</div>
+        <div class="line"><span class="role">Кассир:</span> Со скидкой... <div class="gap" data-answer="Картой"></div> или наличными?</div>
+        <div class="line"><span class="role">Покупатель:</span> <div class="gap" data-answer="Картой"></div>.</div>
+        <div class="line"><span class="role">Кассир:</span> Вставляйте. <div class="gap" data-answer="Наклейки"></div> собираете?</div>
+        <div class="line"><span class="role">Покупатель:</span> Да.</div>
+        <div class="line"><span class="role">Кассир:</span> Ваш <div class="gap" data-answer="чек"></div>. До свидания.</div>
+    </div>
+
+    <div id="win-msg"></div>
+
+    <div class="controls">
+        <button id="solution-btn">Lösung anzeigen</button>
+        <button id="reset-btn">Neu starten</button>
+    </div>
+</div>
+
+<script>
+    const poolData = ["Пакет", "Карта", "Бонусы", "Картой", "Картой", "Наклейки", "чек"];
+    const poolEl = document.getElementById('pool');
+    const winMsg = document.getElementById('win-msg');
+
+    function shuffle(array) {
+        return array.sort(() => Math.random() - 0.5);
+    }
+
+    function createWordCard(text) {
+        const div = document.createElement('div');
+        div.className = 'word-card';
+        div.innerText = text;
+        return div;
+    }
+
+    function init() {
+        poolEl.innerHTML = '';
+        winMsg.innerText = '';
+        document.querySelectorAll('.gap').forEach(gap => gap.innerHTML = '');
+        
+        shuffle([...poolData]).forEach(text => {
+            poolEl.appendChild(createWordCard(text));
+        });
+
+        // Sortable für Wortbank
+        new Sortable(poolEl, {
+            group: 'cloze',
+            animation: 150,
+            ghostClass: 'sortable-ghost'
+        });
+
+        // Sortable für jede Lücke
+        document.querySelectorAll('.gap').forEach(gap => {
+            new Sortable(gap, {
+                group: 'cloze',
+                animation: 150,
+                maxItems: 1, // Nur ein Wort pro Lücke
+                onAdd: function (evt) {
+                    const item = evt.item;
+                    const answer = gap.dataset.answer;
+                    
+                    // Direktes Feedback
+                    if (item.innerText === answer) {
+                        item.classList.add('correct');
+                        item.classList.remove('wrong');
+                    } else {
+                        item.classList.add('wrong');
+                        item.classList.remove('correct');
+                    }
+                    checkWin();
+                },
+                onRemove: function(evt) {
+                    evt.item.classList.remove('correct', 'wrong');
+                    checkWin();
+                }
+            });
+        });
+    }
+
+    function checkWin() {
+        const gaps = document.querySelectorAll('.gap');
+        let allCorrect = true;
+        let filled = 0;
+
+        gaps.forEach(gap => {
+            if (gap.children.length > 0) {
+                filled++;
+                if (gap.firstChild.innerText !== gap.dataset.answer) allCorrect = false;
+            } else {
+                allCorrect = false;
+            }
+        });
+
+        if (allCorrect && filled === gaps.length) {
+            winMsg.innerText = "Hervorragend! Der Dialog ist korrekt ausgefüllt. 🎉";
+        } else {
+            winMsg.innerText = "";
+        }
+    }
+
+    document.getElementById('solution-btn').addEventListener('click', () => {
+        document.querySelectorAll('.gap').forEach(gap => {
+            gap.innerHTML = '';
+            const correctWord = createWordCard(gap.dataset.answer);
+            correctWord.classList.add('correct');
+            gap.appendChild(correctWord);
+        });
+        poolEl.innerHTML = ''; // Wortbank leeren
+        winMsg.innerText = "Lösung wird angezeigt.";
+    });
+
+    document.getElementById('reset-btn').addEventListener('click', init);
+
+    // Initialisierung
+    init();
+</script>
+
+</body>
+</html>
