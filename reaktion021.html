@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch-Lernspiel: Die passende Reaktion</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --success-color: #2ecc71;
+            --error-color: #e74c3c;
+            --bg-color: #f4f7f6;
+            --cashier-bubble: #e1f5fe;
+            --text-color: #2c3e50;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            color: var(--text-color);
+        }
+
+        .quiz-container {
+            width: 100%;
+            max-width: 600px;
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #eee;
+            border-radius: 4px;
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+
+        #progress-fill {
+            height: 100%;
+            background: var(--primary-color);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        h1 {
+            font-size: 1.4rem;
+            text-align: center;
+            margin-top: 0;
+        }
+
+        .instruction {
+            text-align: center;
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            margin-bottom: 20px;
+        }
+
+        /* Situations-Display */
+        .cashier-box {
+            background: var(--cashier-bubble);
+            padding: 20px;
+            border-radius: 12px;
+            position: relative;
+            margin-bottom: 30px;
+            border: 1px solid #b3e5fc;
+        }
+
+        .cashier-label {
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .phrase {
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+
+        /* Antwort-Optionen */
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option-btn {
+            background: white;
+            border: 2px solid #ddd;
+            padding: 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+            text-align: left;
+            outline: none;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            border-color: var(--primary-color);
+            background-color: #f0f7ff;
+        }
+
+        .option-btn.correct {
+            background-color: #e8f5e9;
+            border-color: var(--success-color);
+            color: #2e7d32;
+        }
+
+        .option-btn.wrong {
+            background-color: #ffebee;
+            border-color: var(--error-color);
+            color: #c62828;
+        }
+
+        .option-btn:disabled {
+            cursor: default;
+        }
+
+        /* Controls */
+        .controls {
+            margin-top: 25px;
+            display: flex;
+            justify-content: center;
+        }
+
+        #next-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            display: none; /* Erst nach Antwort zeigen */
+        }
+
+        /* Result Screen */
+        #result-screen {
+            display: none;
+            text-align: center;
+        }
+
+        .score-circle {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: white;
+            line-height: 100px;
+            font-size: 2rem;
+            margin: 20px auto;
+            font-weight: bold;
+        }
+
+        #restart-btn {
+            background: #95a5a6;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 480px) {
+            .phrase { font-size: 1.1rem; }
+            .option-btn { padding: 12px; font-size: 0.95rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="quiz-container">
+    <div id="quiz-screen">
+        <div class="progress-bar"><div id="progress-fill"></div></div>
+        <h1>Was antwortest du?</h1>
+        <div class="instruction">Wähle die logisch richtige Reaktion des Kunden.</div>
+        
+        <div class="cashier-box">
+            <span class="cashier-label">Кассир sagt:</span>
+            <div id="cashier-phrase" class="phrase">...</div>
+        </div>
+
+        <div id="options" class="options-container">
+            <!-- Buttons werden per JS geladen -->
+        </div>
+
+        <div class="controls">
+            <button id="next-btn">Nächste Frage</button>
+        </div>
+    </div>
+
+    <div id="result-screen">
+        <h1>Übung beendet!</h1>
+        <p>Dein Ergebnis:</p>
+        <div class="score-circle" id="score-display">0</div>
+        <p id="result-text"></p>
+        <button id="restart-btn">Nochmal versuchen</button>
+    </div>
+</div>
+
+<script>
+    const questions = [
+        {
+            phrase: "Здравствуйте! Пакет нужен?",
+            options: ["Нет, спасибо.", "Давайте бонусы.", "Картой."],
+            correct: 0
+        },
+        {
+            phrase: "Карта магазина есть?",
+            options: ["Пятнадцать рублей.", "Да, пожалуйста.", "Вставляйте."],
+            correct: 1
+        },
+        {
+            phrase: "Бонусы списываем?",
+            options: ["Здравствуйте.", "До свидания.", "Давайте."],
+            correct: 2
+        },
+        {
+            phrase: "Картой или наличными?",
+            options: ["Хорошо.", "Картой.", "Пакет нужен?"],
+            correct: 1
+        },
+        {
+            phrase: "Наклейки собираете?",
+            options: ["Да.", "Спишем.", "Наличными."],
+            correct: 0
+        },
+        {
+            phrase: "Ваш чек. До свидания.",
+            options: ["Пожалуйста.", "Картой.", "До свидания."],
+            correct: 2
+        }
+    ];
+
+    let currentIdx = 0;
+    let score = 0;
+
+    const cashierPhraseEl = document.getElementById('cashier-phrase');
+    const optionsContainer = document.getElementById('options');
+    const nextBtn = document.getElementById('next-btn');
+    const progressFill = document.getElementById('progress-fill');
+    const quizScreen = document.getElementById('quiz-screen');
+    const resultScreen = document.getElementById('result-screen');
+    const scoreDisplay = document.getElementById('score-display');
+    const resultText = document.getElementById('result-text');
+
+    function loadQuestion() {
+        const q = questions[currentIdx];
+        cashierPhraseEl.innerText = q.phrase;
+        optionsContainer.innerHTML = '';
+        nextBtn.style.display = 'none';
+        
+        // Progress
+        const progress = ((currentIdx) / questions.length) * 100;
+        progressFill.style.width = progress + '%';
+
+        q.options.forEach((opt, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerText = opt;
+            btn.onclick = () => selectOption(index, btn);
+            optionsContainer.appendChild(btn);
+        });
+    }
+
+    function selectOption(selectedIdx, btn) {
+        const correctIdx = questions[currentIdx].correct;
+        const allBtns = document.querySelectorAll('.option-btn');
+        
+        // Buttons deaktivieren
+        allBtns.forEach(b => b.disabled = true);
+
+        if (selectedIdx === correctIdx) {
+            btn.classList.add('correct');
+            score++;
+        } else {
+            btn.classList.add('wrong');
+            allBtns[correctIdx].classList.add('correct'); // Richtige Lösung zeigen
+        }
+
+        nextBtn.style.display = 'block';
+    }
+
+    nextBtn.onclick = () => {
+        currentIdx++;
+        if (currentIdx < questions.length) {
+            loadQuestion();
+        } else {
+            showResults();
+        }
+    };
+
+    function showResults() {
+        progressFill.style.width = '100%';
+        quizScreen.style.display = 'none';
+        resultScreen.style.display = 'block';
+        scoreDisplay.innerText = `${score}/${questions.length}`;
+        
+        if (score === questions.length) {
+            resultText.innerText = "Perfekt! Du kennst dich im russischen Supermarkt bestens aus.";
+        } else if (score >= questions.length / 2) {
+            resultText.innerText = "Gut gemacht! Ein bisschen Übung noch, dann klappt alles.";
+        } else {
+            resultText.innerText = "Schau dir den Dialog nochmal an und versuche es erneut.";
+        }
+    }
+
+    document.getElementById('restart-btn').onclick = () => {
+        currentIdx = 0;
+        score = 0;
+        quizScreen.style.display = 'block';
+        resultScreen.style.display = 'none';
+        loadQuestion();
+    };
+
+    // Start
+    loadQuestion();
+</script>
+
+</body>
+</html>
