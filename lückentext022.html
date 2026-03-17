@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch-Lernspiel: Höfliche Wendungen</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #34495e;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --error-color: #e74c3c;
+            --bg-color: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--primary-color);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 700px;
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        h1 { font-size: 1.4rem; text-align: center; margin-bottom: 10px; }
+
+        .instruction {
+            background: #e1f5fe;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin-bottom: 25px;
+            text-align: center;
+            border: 1px solid #b3e5fc;
+        }
+
+        /* Wortbank */
+        .word-bank {
+            background: #eceff1;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            min-height: 50px;
+            border: 2px dashed #cfd8dc;
+        }
+
+        .word-card {
+            background: white;
+            border: 1px solid #b0bec5;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: grab;
+            font-size: 1rem;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            touch-action: manipulation;
+        }
+
+        /* Dialog-Bereich */
+        .dialog-area {
+            line-height: 2.5;
+            font-size: 1.1rem;
+            background: #fff;
+            padding: 10px;
+        }
+
+        .line {
+            margin-bottom: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .role {
+            font-weight: bold;
+            color: #16a085;
+            min-width: 100px;
+        }
+
+        /* Die Lücken */
+        .gap {
+            display: inline-flex;
+            min-width: 130px;
+            height: 35px;
+            border-bottom: 2px solid #bdc3c7;
+            background: #f9f9f9;
+            vertical-align: middle;
+            margin: 0 5px;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        /* Feedback-Farben */
+        .word-card.correct { background-color: var(--success-color) !important; color: white; border: none; }
+        .word-card.wrong { background-color: var(--error-color) !important; color: white; border: none; }
+
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            min-width: 140px;
+        }
+
+        #solution-btn { background: #f39c12; color: white; }
+        #reset-btn { background: #95a5a6; color: white; }
+
+        #win-msg {
+            text-align: center;
+            margin-top: 20px;
+            font-weight: bold;
+            min-height: 24px;
+        }
+
+        @media (max-width: 480px) {
+            .role { min-width: 100%; margin-bottom: 2px; }
+            .gap { min-width: 110px; }
+            .dialog-area { font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Höfliche Wendungen</h1>
+    
+    <div class="instruction">
+        Vervollständige das Ende des Gesprächs. Ziehe die Wörter in die passenden Lücken.
+    </div>
+
+    <div id="pool" class="word-bank">
+        <!-- Wörter per JS -->
+    </div>
+
+    <div class="dialog-area">
+        <div class="line">
+            <span class="role">Продавец:</span> Триста сорок три рубля.
+        </div>
+        <div class="line">
+            <span class="role">Покупатель:</span> Пожалуйста. (gibt 400 Rubel)
+        </div>
+        <div class="line">
+            <span class="role">Продавец:</span> <div class="gap" data-answer="Без сдачи"></div> не будет?
+        </div>
+        <div class="line">
+            <span class="role">Покупатель:</span> Нет, <div class="gap" data-answer="к сожалению"></div>.
+        </div>
+        <div class="line">
+            <span class="role">Продавец:</span> Ваша <div class="gap" data-answer="сдача"></div> – пятьдесят семь рублей.
+        </div>
+        <div class="line">
+            <span class="role">Покупатель:</span> <div class="gap" data-answer="Спасибо"></div>. До свидания.
+        </div>
+        <div class="line">
+            <span class="role">Продавец:</span> <div class="gap" data-answer="До свидания"></div>.
+        </div>
+    </div>
+
+    <div id="win-msg"></div>
+
+    <div class="controls">
+        <button id="solution-btn" onclick="showSolution()">Lösung anzeigen</button>
+        <button id="reset-btn" onclick="initGame()">Neu starten</button>
+    </div>
+</div>
+
+<script>
+    const vocabulary = ["Без сдачи", "к сожалению", "сдача", "Спасибо", "До свидания"];
+    const poolEl = document.getElementById('pool');
+    const winMsg = document.getElementById('win-msg');
+
+    function createCard(text) {
+        const div = document.createElement('div');
+        div.className = 'word-card';
+        div.innerText = text;
+        return div;
+    }
+
+    function initGame() {
+        poolEl.innerHTML = '';
+        winMsg.innerText = '';
+        document.querySelectorAll('.gap').forEach(gap => gap.innerHTML = '');
+        
+        const shuffled = [...vocabulary].sort(() => Math.random() - 0.5);
+        shuffled.forEach(text => {
+            poolEl.appendChild(createCard(text));
+        });
+
+        new Sortable(poolEl, {
+            group: 'cloze',
+            animation: 150
+        });
+
+        document.querySelectorAll('.gap').forEach(gap => {
+            new Sortable(gap, {
+                group: 'cloze',
+                animation: 150,
+                onAdd: function (evt) {
+                    const item = evt.item;
+                    const answer = gap.dataset.answer;
+                    
+                    if (item.innerText === answer) {
+                        item.classList.add('correct');
+                        item.classList.remove('wrong');
+                    } else {
+                        item.classList.add('wrong');
+                        item.classList.remove('correct');
+                    }
+                    checkWin();
+                },
+                onRemove: function(evt) {
+                    evt.item.classList.remove('correct', 'wrong');
+                    checkWin();
+                }
+            });
+        });
+    }
+
+    function checkWin() {
+        const gaps = document.querySelectorAll('.gap');
+        let allCorrect = true;
+        let filledCount = 0;
+
+        gaps.forEach(gap => {
+            if (gap.children.length > 0) {
+                filledCount++;
+                if (gap.firstChild.innerText !== gap.dataset.answer) allCorrect = false;
+            } else {
+                allCorrect = false;
+            }
+        });
+
+        if (allCorrect && filledCount === vocabulary.length) {
+            winMsg.innerText = "Hervorragend! Du hast den Dialog höflich beendet. 🎉";
+            winMsg.style.color = "var(--success-color)";
+        } else {
+            winMsg.innerText = "";
+        }
+    }
+
+    function showSolution() {
+        document.querySelectorAll('.gap').forEach(gap => {
+            gap.innerHTML = '';
+            const correctCard = createCard(gap.dataset.answer);
+            correctCard.classList.add('correct');
+            gap.appendChild(correctCard);
+        });
+        poolEl.innerHTML = '';
+        winMsg.innerText = "Lösung wird angezeigt.";
+        winMsg.style.color = "#f39c12";
+    }
+
+    initGame();
+</script>
+
+</body>
+</html>
