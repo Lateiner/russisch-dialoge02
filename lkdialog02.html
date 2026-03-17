@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch Lernkartei - Im Supermarkt</title>
+    <style>
+        :root {
+            --primary-green: #2e7d32;
+            --light-green: #e8f5e9;
+            --accent-green: #4caf50;
+            --dark-green: #1b5e20;
+            --card-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            --bg-color: #f1f8e9;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        h1 {
+            color: var(--dark-green);
+            margin-bottom: 10px;
+            text-align: center;
+            font-size: 1.5rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .progress {
+            margin-bottom: 15px;
+            font-weight: bold;
+            color: var(--primary-green);
+            font-size: 1.1rem;
+        }
+
+        /* Flashcard 3D Flip Effect */
+        .flashcard-container {
+            perspective: 1000px;
+            width: 100%;
+            height: 300px;
+            cursor: pointer;
+            margin-bottom: 30px;
+        }
+
+        .flashcard {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+            box-shadow: var(--card-shadow);
+            border-radius: 15px;
+        }
+
+        .flashcard.is-flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+            border-radius: 15px;
+            border: 4px solid var(--primary-green);
+            background: white;
+        }
+
+        .card-back {
+            transform: rotateY(180deg);
+            background-color: var(--light-green);
+        }
+
+        .term {
+            font-size: 2.2rem;
+            font-weight: bold;
+            color: var(--dark-green);
+            word-wrap: break-word;
+            max-width: 100%;
+        }
+
+        .translation {
+            font-size: 1.8rem;
+            color: #333;
+        }
+
+        .side-label {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #999;
+        }
+
+        /* Controls */
+        .nav-controls, .meta-controls {
+            display: flex;
+            gap: 15px;
+            width: 100%;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1rem;
+            transition: all 0.2s;
+            background-color: var(--primary-green);
+            color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        button:hover {
+            background-color: var(--accent-green);
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.secondary {
+            background-color: #607d8b;
+        }
+
+        button.secondary:hover {
+            background-color: #78909c;
+        }
+
+        .keyboard-hint {
+            margin-top: 20px;
+            font-size: 0.8rem;
+            color: #777;
+            text-align: center;
+        }
+
+        @media (max-width: 400px) {
+            .flashcard-container { height: 250px; }
+            .term { font-size: 1.8rem; }
+            .translation { font-size: 1.5rem; }
+            button { padding: 10px 15px; font-size: 0.9rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Russisch: Im Geschäft</h1>
+        
+        <div class="progress" id="progress">1 / 75</div>
+
+        <div class="flashcard-container" id="cardContainer">
+            <div class="flashcard" id="card">
+                <div class="card-face card-front">
+                    <span class="side-label">Russisch</span>
+                    <div class="term" id="ruText">приве́т</div>
+                </div>
+                <div class="card-face card-back">
+                    <span class="side-label">Deutsch</span>
+                    <div class="translation" id="deText">hallo</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="nav-controls">
+            <button id="prevBtn">← Vorherige</button>
+            <button id="nextBtn">Nächste →</button>
+        </div>
+
+        <div class="meta-controls">
+            <button class="secondary" id="homeBtn">An den Anfang</button>
+            <button class="secondary" id="shuffleBtn">🔀 Mischen</button>
+        </div>
+
+        <div class="keyboard-hint">
+            Tipp: Pfeiltasten zum Blättern | Leertaste zum Drehen | Pos1 für Anfang
+        </div>
+    </div>
+
+    <script>
+        const originalData = [
+            { ru: "приве́т", de: "hallo" },
+            { ru: "здра́вствуйте", de: "guten Tag / hallo (formal)" },
+            { ru: "до свида́ния", de: "auf Wiedersehen" },
+            { ru: "спаси́бо", de: "danke" },
+            { ru: "пожа́луйста", de: "bitte / bitte sehr" },
+            { ru: "извини́те", de: "entschuldigen Sie" },
+            { ru: "к сожале́нию", de: "leider" },
+            { ru: "магази́н", de: "Geschäft / Laden" },
+            { ru: "суперма́ркет", de: "Supermarkt" },
+            { ru: "продаве́ц", de: "Verkäufer" },
+            { ru: "касси́р", de: "Kassierer" },
+            { ru: "покупа́тель (m)", de: "Käufer / Kunde" },
+            { ru: "паке́т", de: "Tüte / Beutel" },
+            { ru: "су́мка", de: "Tasche" },
+            { ru: "че́к", de: "Kassenbon / Quittung" },
+            { ru: "ка́рта", de: "Karte" },
+            { ru: "ка́рта магази́на", de: "Kundenkarte" },
+            { ru: "бо́нусы", de: "Bonuspunkte" },
+            { ru: "ски́дка", de: "Rabatt" },
+            { ru: "це́на", de: "Preis" },
+            { ru: "деньги́ (Pl.)", de: "Geld" },
+            { ru: "нали́чные", de: "Bargeld" },
+            { ru: "сда́ча", de: "Wechselgeld" },
+            { ru: "термина́л", de: "Terminal" },
+            { ru: "наклейка", de: "Aufkleber / Sammelsticker" },
+            { ru: "това́р", de: "Ware / Produkt" },
+            { ru: "поку́пка", de: "Einkauf" },
+            { ru: "продукты", de: "Lebensmittel" },
+            { ru: "ча́й", de: "Tee" },
+            { ru: "па́чка", de: "Packung (z. B. Tee oder Butter)" },
+            { ru: "коро́бка", de: "Schachtel / Karton" },
+            { ru: "буты́лка", de: "Flasche" },
+            { ru: "ба́нка", de: "Dose / Glas" },
+            { ru: "упако́вка", de: "Verpackung" },
+            { ru: "бато́н", de: "Weißbrot (länglich)" },
+            { ru: "тво́рог", de: "Quark" },
+            { ru: "сы́р", de: "Käse" },
+            { ru: "молоко́", de: "Milch" },
+            { ru: "я́йца", de: "Eier" },
+            { ru: "я́блоки", de: "Äpfel" },
+            { ru: "са́хар", de: "Zucker" },
+            { ru: "све́жий", de: "frisch" },
+            { ru: "ну́жный", de: "nötig / notwendig" },
+            { ru: "до́рого", de: "teuer" },
+            { ru: "дёшево", de: "billig" },
+            { ru: "мно́го", de: "viel" },
+            { ru: "немно́го", de: "ein wenig / etwas" },
+            { ru: "ско́лько", de: "wie viel" },
+            { ru: "э́тот / э́та / э́то", de: "dieser / diese / dieses (nah)" },
+            { ru: "то́т / та́ / то́", de: "jener / jene / jenes (fern)" },
+            { ru: "гра́мм", de: "Gramm" },
+            { ru: "килогра́мм", de: "Kilogramm" },
+            { ru: "ру́бль (m)", de: "Rubel" },
+            { ru: "копе́йка", de: "Kopeke" },
+            { ru: "ну́жно", de: "man muss / es ist nötig" },
+            { ru: "мо́жно", de: "man kann / es ist erlaubt" },
+            { ru: "говори́ть / сказа́ть", de: "sprechen / sagen" },
+            { ru: "расска́зывать / рассказа́ть", de: "erzählen" },
+            { ru: "спра́шивать / спроси́ть", de: "fragen" },
+            { ru: "отвеча́ть / отве́тить", de: "antworten" },
+            { ru: "покупа́ть / купи́ть", de: "kaufen" },
+            { ru: "плати́ть / заплати́ть", de: "bezahlen" },
+            { ru: "сто́ить (nur NSV)", de: "kosten" },
+            { ru: "тра́тить / потра́тить", de: "ausgeben / verbrauchen" },
+            { ru: "получа́ть / получи́ть", de: "erhalten / bekommen" },
+            { ru: "дава́ть / дать", de: "geben" },
+            { ru: "спи́сывать / списа́ть", de: "abbuchen / verrechnen (Punkte)" },
+            { ru: "начисля́ть / начисли́ть", de: "gutschreiben" },
+            { ru: "вставля́ть / вста́вить", de: "einstecken" },
+            { ru: "вынима́ть / вы́нуть", de: "herausnehmen" },
+            { ru: "прикла́дывать / приложи́ть", de: "auflegen (kontaktlos)" },
+            { ru: "собира́ть / собра́ть", de: "sammeln" },
+            { ru: "привози́ть / привезти́", de: "bringen / liefern" },
+            { ru: "кла́сть / положи́ть", de: "legen / setzen" },
+            { ru: "иска́ть / поиска́ть", de: "suchen" }
+        ];
+
+        let cards = [...originalData];
+        let currentIndex = 0;
+        let isFlipped = false;
+
+        // Elements
+        const cardEl = document.getElementById('card');
+        const ruText = document.getElementById('ruText');
+        const deText = document.getElementById('deText');
+        const progressEl = document.getElementById('progress');
+        const nextBtn = document.getElementById('nextBtn');
+        const prevBtn = document.getElementById('prevBtn');
+        const shuffleBtn = document.getElementById('shuffleBtn');
+        const homeBtn = document.getElementById('homeBtn');
+
+        function updateUI() {
+            // Reset card flip before changing text
+            isFlipped = false;
+            cardEl.classList.remove('is-flipped');
+            
+            setTimeout(() => {
+                const currentCard = cards[currentIndex];
+                ruText.innerText = currentCard.ru;
+                deText.innerText = currentCard.de;
+                progressEl.innerText = `${currentIndex + 1} / ${cards.length}`;
+                adjustFontSize(ruText);
+                adjustFontSize(deText);
+            }, isFlipped ? 300 : 0);
+        }
+
+        function adjustFontSize(element) {
+            const length = element.innerText.length;
+            if (length > 30) {
+                element.style.fontSize = "1.2rem";
+            } else if (length > 20) {
+                element.style.fontSize = "1.5rem";
+            } else {
+                element.style.fontSize = ""; // default from CSS
+            }
+        }
+
+        function toggleFlip() {
+            isFlipped = !isFlipped;
+            cardEl.classList.toggle('is-flipped');
+        }
+
+        function nextCard() {
+            if (currentIndex < cards.length - 1) {
+                currentIndex++;
+                updateUI();
+            }
+        }
+
+        function prevCard() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                updateUI();
+            }
+        }
+
+        function shuffleCards() {
+            for (let i = cards.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [cards[i], cards[j]] = [cards[j], cards[i]];
+            }
+            currentIndex = 0;
+            updateUI();
+        }
+
+        function goHome() {
+            currentIndex = 0;
+            updateUI();
+        }
+
+        // Event Listeners
+        document.getElementById('cardContainer').addEventListener('click', toggleFlip);
+        nextBtn.addEventListener('click', nextCard);
+        prevBtn.addEventListener('click', prevCard);
+        shuffleBtn.addEventListener('click', shuffleCards);
+        homeBtn.addEventListener('click', goHome);
+
+        // Keyboard Controls
+        document.addEventListener('keydown', (e) => {
+            if (e.key === ' ' || e.key === 'Enter') {
+                e.preventDefault(); // Prevent scrolling on space
+                toggleFlip();
+            } else if (e.key === 'ArrowRight') {
+                nextCard();
+            } else if (e.key === 'ArrowLeft') {
+                prevCard();
+            } else if (e.key === 'Home') {
+                goHome();
+            }
+        });
+
+        // Initial Load
+        updateUI();
+    </script>
+</body>
+</html>
