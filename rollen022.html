@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch-Lernspiel: Wer sagt was im Laden?</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <style>
+        :root {
+            --seller-color: #2980b9;
+            --buyer-color: #8e44ad;
+            --success-color: #27ae60;
+            --error-color: #e74c3c;
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #2c3e50;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 1.4rem;
+            margin-bottom: 10px;
+        }
+
+        .instruction {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            font-size: 0.95rem;
+            text-align: center;
+        }
+
+        /* Bereich für die Sätze */
+        .pool-area {
+            background: #dfe6e9;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            border: 2px dashed #b2bec3;
+            min-height: 80px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .pool-title {
+            width: 100%;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #636e72;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+
+        /* Die zwei Spalten */
+        .zones-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .zone {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            min-height: 350px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .zone-title {
+            text-align: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f8f9fa;
+            font-weight: bold;
+        }
+
+        .seller-title { color: var(--seller-color); }
+        .buyer-title { color: var(--buyer-color); }
+
+        /* Listen-Styles */
+        .drop-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            flex-grow: 1;
+            min-height: 100px;
+        }
+
+        .phrase-card {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            cursor: grab;
+            font-size: 0.95rem;
+            box-shadow: 0 2px 3px rgba(0,0,0,0.05);
+            transition: all 0.2s ease;
+            touch-action: manipulation;
+            text-align: center;
+        }
+
+        .phrase-card:active { cursor: grabbing; }
+
+        /* Zustände für direktes Feedback */
+        .phrase-card.correct {
+            border: 2px solid var(--success-color);
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .phrase-card.wrong {
+            border: 2px solid var(--error-color);
+            background-color: #ffebee;
+            color: #c62828;
+        }
+
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            min-width: 150px;
+            transition: background 0.2s;
+        }
+
+        #solution-btn { background: #f39c12; color: white; }
+        #reset-btn { background: #95a5a6; color: white; }
+        button:hover { opacity: 0.9; }
+
+        #feedback-msg {
+            text-align: center;
+            margin-top: 15px;
+            font-weight: bold;
+            min-height: 20px;
+        }
+
+        /* Mobil-Anpassung */
+        @media (max-width: 600px) {
+            .zones-grid { grid-template-columns: 1fr; }
+            .zone { min-height: 200px; }
+            button { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Wer sagt was im Geschäft?</h1>
+
+    <div class="instruction">
+        Ziehe die Sätze in die richtige Spalte. Du erhältst sofort Feedback!
+    </div>
+
+    <div class="pool-area">
+        <p class="pool-title">Sätze zum Zuordnen</p>
+        <div id="pool" class="drop-list"></div>
+    </div>
+
+    <div class="zones-grid">
+        <div class="zone" id="zone-s">
+            <div class="zone-title seller-title">Продавец (Verkäufer)</div>
+            <div id="seller-list" class="drop-list"></div>
+        </div>
+        <div class="zone" id="zone-b">
+            <div class="zone-title buyer-title">Покупатель (Käufer)</div>
+            <div id="buyer-list" class="drop-list"></div>
+        </div>
+    </div>
+
+    <div id="feedback-msg"></div>
+
+    <div class="controls">
+        <button id="solution-btn">Lösung anzeigen</button>
+        <button id="reset-btn">Neu starten</button>
+    </div>
+</div>
+
+<script>
+    // 's' für Seller (Verkäufer), 'b' für Buyer (Käufer)
+    const phrases = [
+        { text: "С вас девяносто три рубля.", role: "s" },
+        { text: "Что-то еще?", role: "s" },
+        { text: "Без сдачи не будет?", role: "s" },
+        { text: "Семьдесят пять. Вам один?", role: "s" },
+        { text: "Утром привезли.", role: "s" },
+        { text: "На двести пятьдесят рублей пойдет?", role: "s" },
+        { text: "Ваша сдача – пятьдесят семь рублей.", role: "s" },
+        { text: "Сколько стоит чай Липтон?", role: "b" },
+        { text: "Давайте грамм триста.", role: "b" },
+        { text: "Творог у вас свежий?", role: "b" },
+        { text: "И еще тот батон.", role: "b" },
+        { text: "Нет, к сожалению.", role: "b" },
+        { text: "Это всё.", role: "b" }
+    ];
+
+    const poolEl = document.getElementById('pool');
+    const sellerListEl = document.getElementById('seller-list');
+    const buyerListEl = document.getElementById('buyer-list');
+    const feedbackMsg = document.getElementById('feedback-msg');
+
+    function validateCard(card, targetListId) {
+        card.classList.remove('correct', 'wrong');
+        
+        if (targetListId === 'seller-list') {
+            if (card.dataset.role === 's') card.classList.add('correct');
+            else card.classList.add('wrong');
+        } else if (targetListId === 'buyer-list') {
+            if (card.dataset.role === 'b') card.classList.add('correct');
+            else card.classList.add('wrong');
+        }
+        checkWin();
+    }
+
+    function checkWin() {
+        const totalPlaced = sellerListEl.children.length + buyerListEl.children.length;
+        const totalWrong = document.querySelectorAll('.wrong').length;
+
+        if (totalPlaced === phrases.length && totalWrong === 0) {
+            feedbackMsg.innerText = "Hervorragend! Alles richtig zugeordnet. 🎉";
+            feedbackMsg.style.color = "#27ae60";
+        } else {
+            feedbackMsg.innerText = "";
+        }
+    }
+
+    const config = {
+        group: 'roles',
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        onEnd: (evt) => {
+            validateCard(evt.item, evt.to.id);
+        }
+    };
+
+    new Sortable(poolEl, config);
+    new Sortable(sellerListEl, config);
+    new Sortable(buyerListEl, config);
+
+    function init() {
+        poolEl.innerHTML = '';
+        sellerListEl.innerHTML = '';
+        buyerListEl.innerHTML = '';
+        feedbackMsg.innerText = '';
+
+        const shuffled = [...phrases].sort(() => Math.random() - 0.5);
+        shuffled.forEach(phrase => {
+            const div = document.createElement('div');
+            div.className = 'phrase-card';
+            div.innerText = phrase.text;
+            div.dataset.role = phrase.role;
+            poolEl.appendChild(div);
+        });
+    }
+
+    document.getElementById('solution-btn').addEventListener('click', () => {
+        sellerListEl.innerHTML = '';
+        buyerListEl.innerHTML = '';
+        poolEl.innerHTML = '';
+        
+        phrases.forEach(phrase => {
+            const div = document.createElement('div');
+            div.className = 'phrase-card correct';
+            div.innerText = phrase.text;
+            if (phrase.role === 's') sellerListEl.appendChild(div);
+            else buyerListEl.appendChild(div);
+        });
+        feedbackMsg.innerText = "Lösung wird angezeigt.";
+        feedbackMsg.style.color = "#f39c12";
+    });
+
+    document.getElementById('reset-btn').addEventListener('click', init);
+
+    init();
+</script>
+
+</body>
+</html>
