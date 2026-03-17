@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch-Lernspiel: Verpackungs-Klicker</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --success-color: #2ecc71;
+            --error-color: #e74c3c;
+            --solution-color: #f39c12;
+            --bg-color: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--primary-color);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        h1 { font-size: 1.4rem; margin-bottom: 5px; }
+
+        .instruction {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            margin-bottom: 15px;
+        }
+
+        /* Die Aufgabe in der Sprechblase */
+        .task-bubble {
+            background: #e1f5fe;
+            border: 2px solid var(--accent-color);
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Das Emoji-Raster */
+        .emoji-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+
+        .hotspot {
+            background: white;
+            border: 2px solid #eee;
+            border-radius: 10px;
+            font-size: 2.2rem;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        .label-under {
+            font-size: 0.7rem;
+            color: #95a5a6;
+            margin-top: 5px;
+            font-weight: normal;
+        }
+
+        /* Effekte */
+        .hotspot:hover { transform: scale(1.05); border-color: var(--accent-color); }
+        .correct-flash { background-color: var(--success-color) !important; border-color: #27ae60 !important; }
+        .wrong-flash { background-color: var(--error-color) !important; border-color: #c0392b !important; }
+        .solution-flash { background-color: var(--solution-color) !important; border-color: #d35400 !important; animation: blink 0.5s repeat(3); }
+
+        @keyframes blink { 50% { opacity: 0.5; } }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 18px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            min-width: 130px;
+        }
+
+        .btn-next { background: var(--accent-color); color: white; }
+        .btn-solution { background: var(--solution-color); color: white; }
+        .btn-reset { background: #95a5a6; color: white; }
+
+        #feedback-text { margin: 15px 0; font-weight: bold; min-height: 1.5rem; }
+        #counter { font-size: 0.85rem; color: #7f8c8d; margin-bottom: 5px; }
+
+        @media (max-width: 480px) {
+            .emoji-grid { grid-template-columns: repeat(3, 1fr); }
+            .hotspot { font-size: 1.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Verpackungen & Behälter</h1>
+    <div id="counter">Aufgabe 1 von 10</div>
+    
+    <div class="task-bubble" id="task-bubble">Lädt...</div>
+
+    <div class="emoji-grid" id="grid">
+        <!-- Emojis per JS -->
+    </div>
+
+    <div id="feedback-text"></div>
+
+    <div class="controls">
+        <button id="btn-next" class="btn-next" onclick="nextTask()" style="display:none;">Weiter</button>
+        <button id="btn-solution" class="btn-solution" onclick="showSolution()">Lösung anzeigen</button>
+        <button id="btn-reset" class="btn-reset" onclick="restartGame()">Neustart</button>
+    </div>
+</div>
+
+<script>
+    const vocabulary = [
+        { emoji: "🍵", word: "пачка", de: "Packung (z.B. Tee)", msg: "Richtig! Eine „пачка“ wird oft für Tee, Butter oder Zigaretten verwendet." },
+        { emoji: "📦", word: "коробка", de: "Schachtel / Karton", msg: "Genau! Eine „коробка“ ist eine feste Schachtel oder ein Karton." },
+        { emoji: "🛍️", word: "пакет", de: "Tüte / Beutel", msg: "Korrekt! Ein „пакет“ ist die typische Plastik- oder Papiertüte." },
+        { emoji: "🍼", word: "бутылка", de: "Flasche", msg: "Richtig! Das ist eine „бутылка“." },
+        { emoji: "🫙", word: "банка", de: "Dose / Glas", msg: "Genau! „банка“ bezeichnet Konservendosen oder Einmachgläser." },
+        { emoji: "🥖", word: "батон", de: "Stange (Brot)", msg: "Richtig! Ein „батон“ ist ein längliches Weißbrot." },
+        { emoji: "🎁", word: "упаковка", de: "Verpackung", msg: "Korrekt! „упаковка“ ist der allgemeine Begriff für eine Verpackung." },
+        { emoji: "🍫", word: "плитка", de: "Tafel", msg: "Richtig! Eine „плитка“ bezeichnet meist eine Tafel Schokolade." },
+        { emoji: "🥤", word: "стакан", de: "Becher / Glas", msg: "Genau! Ein „стакан“ wird auch für Joghurt- oder Schmandbecher genutzt." },
+        { emoji: "🧴", word: "тюбик", de: "Tube", msg: "Richtig! Ein „тюбик“ ist eine Tube (z.B. für Zahnpasta oder Senf)." }
+    ];
+
+    let currentIdx = 0;
+    let canClick = true;
+    let shuffledTasks = [];
+
+    const taskBubble = document.getElementById('task-bubble');
+    const feedbackText = document.getElementById('feedback-text');
+    const btnNext = document.getElementById('btn-next');
+    const counterText = document.getElementById('counter');
+    const grid = document.getElementById('grid');
+
+    function initGame() {
+        currentIdx = 0;
+        shuffledTasks = [...vocabulary].sort(() => Math.random() - 0.5);
+        renderGrid();
+        loadTask();
+    }
+
+    function renderGrid() {
+        grid.innerHTML = '';
+        vocabulary.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'hotspot';
+            div.innerHTML = `${item.emoji}<span class="label-under">${item.de}</span>`;
+            div.onclick = () => handleCheck(div, item.word);
+            grid.appendChild(div);
+        });
+    }
+
+    function loadTask() {
+        if (currentIdx >= shuffledTasks.length) {
+            taskBubble.innerText = "Hervorragend!";
+            feedbackText.innerText = "Du kennst nun alle Verpackungsarten.";
+            btnNext.style.display = "none";
+            return;
+        }
+        canClick = true;
+        const task = shuffledTasks[currentIdx];
+        taskBubble.innerText = `Wo ist: „${task.word}“?`;
+        feedbackText.innerText = "";
+        btnNext.style.display = "none";
+        counterText.innerText = `Aufgabe ${currentIdx + 1} von 10`;
+        
+        document.querySelectorAll('.hotspot').forEach(h => {
+            h.classList.remove('correct-flash', 'wrong-flash', 'solution-flash');
+        });
+    }
+
+    function handleCheck(el, clickedWord) {
+        if (!canClick) return;
+        
+        if (clickedWord === shuffledTasks[currentIdx].word) {
+            canClick = false;
+            el.classList.add('correct-flash');
+            feedbackText.innerText = shuffledTasks[currentIdx].msg;
+            feedbackText.style.color = "var(--success-color)";
+            btnNext.style.display = "inline-block";
+        } else {
+            el.classList.add('wrong-flash');
+            setTimeout(() => el.classList.remove('wrong-flash'), 500);
+            feedbackText.innerText = "Versuch es nochmal!";
+            feedbackText.style.color = "var(--error-color)";
+        }
+    }
+
+    function nextTask() {
+        currentIdx++;
+        loadTask();
+    }
+
+    function showSolution() {
+        if (!canClick) return;
+        const correctWord = shuffledTasks[currentIdx].word;
+        document.querySelectorAll('.hotspot').forEach((h, index) => {
+            if (vocabulary[index].word === correctWord) {
+                h.classList.add('solution-flash');
+                setTimeout(() => h.classList.remove('solution-flash'), 1500);
+            }
+        });
+    }
+
+    function restartGame() {
+        initGame();
+    }
+
+    initGame();
+</script>
+
+</body>
+</html>
