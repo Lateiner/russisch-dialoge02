@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch-Lernspiel: Verständnis-Check Dialog 2</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #27ae60;
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --success-bg: #e8f5e9;
+            --error-bg: #ffebee;
+            --success-text: #2e7d32;
+            --error-text: #c62828;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            color: var(--primary-color);
+            font-style: normal;
+        }
+
+        .quiz-container {
+            width: 100%;
+            max-width: 650px;
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #eee;
+            border-radius: 4px;
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+
+        #progress-fill {
+            height: 100%;
+            background: var(--accent-color);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        h1 {
+            font-size: 1.4rem;
+            text-align: center;
+            margin-top: 0;
+            color: var(--primary-color);
+            font-style: normal;
+        }
+
+        .instruction {
+            text-align: center;
+            font-size: 0.95rem;
+            color: #7f8c8d;
+            margin-bottom: 20px;
+            font-style: normal;
+        }
+
+        .dialog-box {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 5px solid var(--accent-color);
+            margin-bottom: 25px;
+        }
+
+        .question-text {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #34495e;
+            font-style: normal;
+        }
+
+        .seller-reply {
+            font-size: 1.2rem;
+            color: #16a085;
+            font-weight: bold;
+            display: block;
+            margin-top: 10px;
+            font-style: normal;
+        }
+
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option-btn {
+            background: white;
+            border: 2px solid #ddd;
+            padding: 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+            text-align: left;
+            outline: none;
+            font-style: normal;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            border-color: var(--accent-color);
+            background-color: #f0fdf4;
+        }
+
+        .option-btn.correct {
+            background-color: var(--success-bg);
+            border-color: var(--accent-color);
+            color: var(--success-text);
+        }
+
+        .option-btn.wrong {
+            background-color: var(--error-bg);
+            border-color: #e74c3c;
+            color: var(--error-text);
+        }
+
+        .feedback-area {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+            font-weight: 500;
+            text-align: center;
+            font-style: normal;
+        }
+
+        .next-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: none;
+        }
+
+        #result-screen {
+            display: none;
+            text-align: center;
+        }
+
+        .score-display {
+            font-size: 3rem;
+            font-weight: bold;
+            color: var(--accent-color);
+            margin: 20px 0;
+        }
+
+        .restart-btn {
+            background: #95a5a6;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        @media (max-width: 480px) {
+            h1 { font-size: 1.2rem; }
+            .option-btn { padding: 12px; font-size: 0.95rem; }
+            .seller-reply { font-size: 1.1rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="quiz-container">
+    <div id="quiz-screen">
+        <div class="progress-bar"><div id="progress-fill"></div></div>
+        <h1>Verständnis-Check</h1>
+        <div class="instruction">Was ist die Bedeutung dieser Aussagen aus Dialog 2?</div>
+
+        <div class="dialog-box">
+            <div id="question-label" class="question-text">Satz: ...</div>
+            <div id="seller-phrase" class="seller-reply">Kontext: ...</div>
+        </div>
+
+        <div id="options" class="options-container">
+            <!-- Buttons per JS -->
+        </div>
+
+        <div id="feedback" class="feedback-area"></div>
+        <button id="next-btn" class="next-btn" onclick="goToNext()">Nächste Frage</button>
+    </div>
+
+    <div id="result-screen">
+        <h1>Übung beendet!</h1>
+        <p>Dein Ergebnis:</p>
+        <div id="final-score" class="score-display">0 / 10</div>
+        <p id="result-text"></p>
+        <button class="restart-btn" onclick="restartQuiz()">Nochmal versuchen</button>
+    </div>
+</div>
+
+<script>
+    const questions = [
+        {
+            customer: "Творог у вас свежий?",
+            seller: "Утром привезли.",
+            options: [
+                "Der Quark ist alt.",
+                "Der Quark ist frisch.",
+                "Es gibt heute keinen Quark."
+            ],
+            correct: 1,
+            explanation: "Richtig! „Heute Morgen geliefert“ bedeutet, dass das Produkt frisch ist."
+        },
+        {
+            customer: "Сколько стоит чай?",
+            seller: "Семьдесят пять.",
+            options: [
+                "Der Tee kostet 75 Rubel.",
+                "Der Tee kostet 75 Kopeken.",
+                "Der Tee ist kostenlos."
+            ],
+            correct: 0,
+            explanation: "Genau! In Geschäften bezieht sich die Zahl meistens auf Rubel."
+        },
+        {
+            customer: "Kunde möchte Quark kaufen.",
+            seller: "Давайте грамм триста.",
+            options: [
+                "Geben Sie mir genau 300 Gramm.",
+                "Geben Sie mir etwa 300 Gramm.",
+                "Geben Sie mir mehr als 300 Gramm."
+            ],
+            correct: 1,
+            explanation: "Richtig! Steht das Wort „Gramm“ vor der Zahl, bedeutet es „etwa“."
+        },
+        {
+            customer: "Kunde zeigt auf ein Brot.",
+            seller: "И еще тот батон.",
+            options: [
+                "Dieses Brot hier vorne.",
+                "Jenes Brot dort hinten.",
+                "Ein beliebiges Brot."
+            ],
+            correct: 1,
+            explanation: "Korrekt! „Тот“ (jener) bezieht sich auf ein Objekt, das weiter entfernt ist."
+        },
+        {
+            customer: "Verkäufer fragt nach der Menge.",
+            seller: "Вам один?",
+            options: [
+                "Möchten Sie eine Packung/ein Stück?",
+                "Möchten Sie einen Rubel?",
+                "Sind Sie alleine?"
+            ],
+            correct: 0,
+            explanation: "Genau! „Один“ bezieht sich hier auf die Einheit des Produkts (Tee)."
+        },
+        {
+            customer: "Der Verkäufer nennt die Summe.",
+            seller: "С вас девяносто три рубля.",
+            options: [
+                "Sie erhalten 93 Rubel zurück.",
+                "Sie müssen 93 Rubel bezahlen.",
+                "Das Produkt wiegt 93 Gramm."
+            ],
+            correct: 1,
+            explanation: "Richtig! „С вас“ bedeutet wörtlich „von Ihnen“ und kündigt den Rechnungsbetrag an."
+        },
+        {
+            customer: "Kunde hat noch nicht alles.",
+            seller: "Что-то еще?",
+            options: [
+                "Haben Sie das schon?",
+                "Noch etwas?",
+                "Ist das alles?"
+            ],
+            correct: 1,
+            explanation: "Korrekt! Damit fragt der Verkäufer, ob der Kunde weitere Wünsche hat."
+        },
+        {
+            customer: "Verkäufer schlägt Preis vor.",
+            seller: "На двести пятьдесят рублей пойдет?",
+            options: [
+                "Ist der Preis für die Menge in Ordnung?",
+                "Können Sie mit 250 Rubel bezahlen?",
+                "Kostet alles zusammen 250 Rubel?"
+            ],
+            correct: 0,
+            explanation: "Richtig! „Пойдет?“ bedeutet in diesem Kontext „Ist das okay?“."
+        },
+        {
+            customer: "Kunde zahlt mit einem großen Schein.",
+            seller: "Без сдачи не будет?",
+            options: [
+                "Haben Sie kein Wechselgeld?",
+                "Können Sie passend bezahlen?",
+                "Brauchen Sie kein Wechselgeld?"
+            ],
+            correct: 1,
+            explanation: "Genau! Der Verkäufer fragt höflich, ob der Kunde den Betrag ohne Restgeldzahlung begleichen kann."
+        },
+        {
+            customer: "Der Verkäufer gibt Geld zurück.",
+            seller: "Ваша сдача – пятьдесят семь рублей.",
+            options: [
+                "Ihre Rechnung beträgt 57 Rubel.",
+                "Sie erhalten 57 Rubel Wechselgeld.",
+                "Der Rabatt beträgt 57 Rubel."
+            ],
+            correct: 1,
+            explanation: "Richtig! „Сдача“ ist das Wechselgeld, das der Kunde zurückerhält."
+        }
+    ];
+
+    let currentIdx = 0;
+    let score = 0;
+
+    const questionLabel = document.getElementById('question-label');
+    const sellerPhrase = document.getElementById('seller-phrase');
+    const optionsContainer = document.getElementById('options');
+    const feedbackEl = document.getElementById('feedback');
+    const nextBtn = document.getElementById('next-btn');
+    const progressFill = document.getElementById('progress-fill');
+
+    function loadQuestion() {
+        const q = questions[currentIdx];
+        questionLabel.innerText = `Situation: ${q.customer}`;
+        sellerPhrase.innerText = `Satz: „${q.seller}“`;
+        optionsContainer.innerHTML = '';
+        feedbackEl.style.display = 'none';
+        nextBtn.style.display = 'none';
+
+        progressFill.style.width = `${(currentIdx / questions.length) * 100}%`;
+
+        q.options.forEach((opt, idx) => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerText = opt;
+            btn.onclick = () => checkAnswer(idx, btn);
+            optionsContainer.appendChild(btn);
+        });
+    }
+
+    function checkAnswer(selectedIdx, clickedBtn) {
+        const q = questions[currentIdx];
+        const allBtns = document.querySelectorAll('.option-btn');
+        allBtns.forEach(btn => btn.disabled = true);
+
+        feedbackEl.style.display = 'block';
+
+        if (selectedIdx === q.correct) {
+            clickedBtn.classList.add('correct');
+            feedbackEl.innerText = q.explanation;
+            feedbackEl.style.backgroundColor = 'var(--success-bg)';
+            feedbackEl.style.color = 'var(--success-text)';
+            score++;
+        } else {
+            clickedBtn.classList.add('wrong');
+            allBtns[q.correct].classList.add('correct');
+            feedbackEl.innerText = "Nicht ganz richtig.";
+            feedbackEl.style.backgroundColor = 'var(--error-bg)';
+            feedbackEl.style.color = 'var(--error-text)';
+        }
+
+        nextBtn.style.display = 'block';
+    }
+
+    function goToNext() {
+        currentIdx++;
+        if (currentIdx < questions.length) {
+            loadQuestion();
+        } else {
+            showResults();
+        }
+    }
+
+    function showResults() {
+        progressFill.style.width = '100%';
+        document.getElementById('quiz-screen').style.display = 'none';
+        document.getElementById('result-screen').style.display = 'block';
+        document.getElementById('final-score').innerText = `${score} / 10`;
+        
+        const resText = document.getElementById('result-text');
+        if (score === 10) {
+            resText.innerText = "Perfekt! Du hast alle Nuancen von Dialog 2 verstanden.";
+        } else if (score >= 7) {
+            resText.innerText = "Sehr gut! Du bist fit für den Einkauf im russischen Laden.";
+        } else {
+            resText.innerText = "Schau dir den Dialog und die Erklärungen am besten noch einmal an.";
+        }
+    }
+
+    function restartQuiz() {
+        currentIdx = 0;
+        score = 0;
+        document.getElementById('quiz-screen').style.display = 'block';
+        document.getElementById('result-screen').style.display = 'none';
+        loadQuestion();
+    }
+
+    loadQuestion();
+</script>
+
+</body>
+</html>
