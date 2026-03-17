@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch-Lernspiel: Wechselgeld-Rechner</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --error-color: #e74c3c;
+            --bg-color: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            color: var(--primary-color);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #eee;
+            border-radius: 4px;
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+
+        #progress-fill {
+            height: 100%;
+            background: var(--accent-color);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        h1 {
+            font-size: 1.4rem;
+            text-align: center;
+            margin-top: 0;
+        }
+
+        .instruction {
+            text-align: center;
+            font-size: 0.95rem;
+            color: #7f8c8d;
+            margin-bottom: 20px;
+        }
+
+        /* Rechner-Display */
+        .calc-box {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            border: 2px solid #eee;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .amount-line {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            padding: 5px 0;
+            border-bottom: 1px dashed #ddd;
+        }
+
+        .total-label { font-weight: bold; }
+        .total-value { color: var(--error-color); font-weight: bold; }
+        .pay-value { color: var(--success-color); font-weight: bold; }
+
+        .question-prompt {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-top: 15px;
+            color: var(--primary-color);
+        }
+
+        /* Antwort-Optionen */
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .option-btn {
+            background: white;
+            border: 2px solid #ddd;
+            padding: 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: all 0.2s;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            border-color: var(--accent-color);
+            background-color: #f0f7ff;
+        }
+
+        .option-btn.correct {
+            background-color: #e8f5e9;
+            border-color: var(--success-color);
+            color: #2e7d32;
+        }
+
+        .option-btn.wrong {
+            background-color: #ffebee;
+            border-color: var(--error-color);
+            color: #c62828;
+        }
+
+        #feedback {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+        }
+
+        .next-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            display: none;
+        }
+
+        #result-screen {
+            display: none;
+            text-align: center;
+        }
+
+        .score-val {
+            font-size: 3rem;
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+
+        @media (max-width: 480px) {
+            .amount-line { font-size: 1rem; }
+            .option-btn { padding: 12px; font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="quiz-screen">
+        <div class="progress-bar"><div id="progress-fill"></div></div>
+        <h1>Сколько сдачи?</h1>
+        <div class="instruction">Berechne das Wechselgeld und wähle die richtige russische Zahl.</div>
+
+        <div class="calc-box">
+            <div class="amount-line">
+                <span>Сумма (Gesamtbetrag):</span>
+                <span id="total-val" class="total-value">0 руб.</span>
+            </div>
+            <div class="amount-line">
+                <span>Оплата (Kunde gibt):</span>
+                <span id="pay-val" class="pay-value">0 руб.</span>
+            </div>
+            <div class="question-prompt">Сдача (Wechselgeld): ?</div>
+        </div>
+
+        <div id="options" class="options-container"></div>
+
+        <div id="feedback"></div>
+        <button id="next-btn" class="next-btn" onclick="nextQuestion()">Nächste Aufgabe</button>
+    </div>
+
+    <div id="result-screen">
+        <h1>Übung beendet!</h1>
+        <div class="score-val" id="final-score">0 / 10</div>
+        <p id="comment"></p>
+        <button onclick="location.reload()" style="padding:15px; background:var(--accent-color); color:white; border:none; border-radius:10px; cursor:pointer;">Neu starten</button>
+    </div>
+</div>
+
+<script>
+    const questions = [
+        { total: 343, pay: 400, correct: "пятьдесят семь", options: ["пятьдесят семь", "сорок три", "девяносто три"] },
+        { total: 75, pay: 100, correct: "двадцать пять", options: ["двадцать пять", "тридцать пять", "пятнадцать"] },
+        { total: 93, pay: 100, correct: "семь", options: ["семь", "тринадцать", "восемь"] },
+        { total: 250, pay: 300, correct: "пятьдесят", options: ["пятьдесят", "шестьдесят", "сорок"] },
+        { total: 18, pay: 20, correct: "два", options: ["два", "три", "один"] },
+        { total: 343, pay: 500, correct: "сто пятьдесят семь", options: ["сто пятьдесят семь", "двести сорок три", "сто сорок семь"] },
+        { total: 93, pay: 150, correct: "пятьдесят семь", options: ["пятьдесят семь", "сорок семь", "шестьдесят семь"] },
+        { total: 75, pay: 80, correct: "пять", options: ["пять", "десять", "четыре"] },
+        { total: 343, pay: 450, correct: "сто семь", options: ["сто семь", "девяносто семь", "сто восемь"] },
+        { total: 18, pay: 50, correct: "тридцать два", options: ["тридцать два", "тридцать три", "сорок два"] }
+    ];
+
+    let currentIdx = 0;
+    let score = 0;
+
+    const totalValEl = document.getElementById('total-val');
+    const payValEl = document.getElementById('pay-val');
+    const optionsContainer = document.getElementById('options');
+    const feedbackEl = document.getElementById('feedback');
+    const nextBtn = document.getElementById('next-btn');
+    const progressFill = document.getElementById('progress-fill');
+
+    function loadQuestion() {
+        const q = questions[currentIdx];
+        totalValEl.innerText = `${q.total} руб.`;
+        payValEl.innerText = `${q.pay} руб.`;
+        optionsContainer.innerHTML = '';
+        feedbackEl.style.display = 'none';
+        nextBtn.style.display = 'none';
+
+        progressFill.style.width = `${(currentIdx / questions.length) * 100}%`;
+
+        // Optionen mischen
+        const shuffledOptions = [...q.options].sort(() => Math.random() - 0.5);
+
+        shuffledOptions.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerText = opt;
+            btn.onclick = () => checkAnswer(opt, btn);
+            optionsContainer.appendChild(btn);
+        });
+    }
+
+    function checkAnswer(selected, btn) {
+        const q = questions[currentIdx];
+        const allBtns = document.querySelectorAll('.option-btn');
+        allBtns.forEach(b => b.disabled = true);
+
+        const diff = q.pay - q.total;
+
+        if (selected === q.correct) {
+            btn.classList.add('correct');
+            feedbackEl.innerText = `Richtig! ${q.pay} - ${q.total} = ${diff}.`;
+            feedbackEl.style.display = 'block';
+            feedbackEl.style.backgroundColor = '#e8f5e9';
+            feedbackEl.style.color = '#2e7d32';
+            score++;
+        } else {
+            btn.classList.add('wrong');
+            feedbackEl.innerText = `Falsch. Das richtige Wechselgeld ist ${diff} (${q.correct}).`;
+            feedbackEl.style.display = 'block';
+            feedbackEl.style.backgroundColor = '#ffebee';
+            feedbackEl.style.color = '#c62828';
+            
+            allBtns.forEach(b => {
+                if (b.innerText === q.correct) b.classList.add('correct');
+            });
+        }
+        nextBtn.style.display = 'block';
+    }
+
+    function nextQuestion() {
+        currentIdx++;
+        if (currentIdx < questions.length) {
+            loadQuestion();
+        } else {
+            showResults();
+        }
+    }
+
+    function showResults() {
+        progressFill.style.width = '100%';
+        document.getElementById('quiz-screen').style.display = 'none';
+        document.getElementById('result-screen').style.display = 'block';
+        document.getElementById('final-score').innerText = `${score} / 10`;
+        
+        const comment = document.getElementById('comment');
+        if (score === 10) comment.innerText = "Hervorragend! Du bist ein Profi an der russischen Kasse.";
+        else if (score >= 7) comment.innerText = "Sehr gut gerechnet!";
+        else comment.innerText = "Übe die russischen Zahlen am besten noch einmal.";
+    }
+
+    loadQuestion();
+</script>
+
+</body>
+</html>
